@@ -28,16 +28,16 @@ interface SearchResult {
   isBogo: boolean;
 }
 
-// Common words to ignore when extracting product type from a name
-const SKIP_WORDS = new Set([
-  "bogo", "bogo*", "save", "up", "to", "the", "and", "or", "with", "de",
-  "del", "la", "el", "los", "las", "for", "new", "free", "buy", "one",
-  "get", "publix", "premium", "organic", "original", "classic", "style",
-  "select", "assorted", "varieties", "all", "any",
-]);
-
+/**
+ * Find matching BOGO deals for a shopping list keyword.
+ *
+ * For related/sibling deals, we try progressively shorter phrases from the
+ * keyword to find the best product-type match. This ensures "string cheese"
+ * finds other string cheese deals (not all cheese), while "Sara Lee Butter
+ * Bread" still finds other bread deals.
+ */
 function findMatchingDeals(item: WatchlistItem, deals: Deal[]): Deal[] {
-  const kw = item.keyword.toLowerCase();
+  const kw = item.keyword.toLowerCase().trim();
 
   // 1. Direct keyword matches
   const directMatches = deals.filter(
@@ -46,42 +46,29 @@ function findMatchingDeals(item: WatchlistItem, deals: Deal[]): Deal[] {
       d.description.toLowerCase().includes(kw)
   );
 
-  // 2. If we got direct matches, find related deals by extracting product words
-  if (directMatches.length > 0) {
-    // Extract meaningful product words from the keyword and matched deal names
-    const allText = [kw, ...directMatches.map((d) => d.name.toLowerCase())].join(" ");
-    const words = allText
-      .replace(/[^a-z\s]/g, "")
-      .split(/\s+/)
-      .filter((w) => w.length >= 4 && !SKIP_WORDS.has(w));
+  // 2. Find related deals — only for 3+ word keywords (likely brand + product)
+  //    Short keywords like "string cheese" or "bread" are already product types,
+  //    so direct matches are the full result. Longer keywords like
+  //    "Sara Lee Butter Bread" contain a brand, so we extract the product type.
+  const kwWords = kw.split(/\s+/);
+  if (directMatches.length > 0 && kwWords.length >= 3) {
+    const directIds = new Set(directMatches.map((d) => d.id));
+    const otherDeals = deals.filter((d) => !directIds.has(d.id));
 
-    // Find product-type words (words that appear in other deals too)
-    const productWords = words.filter((word) =>
-      deals.some(
-        (d) =>
-          !directMatches.includes(d) &&
-          d.name.toLowerCase().includes(word)
-      )
-    );
+    // Try progressively shorter phrases by dropping words from the front
+    for (let i = 1; i < kwWords.length; i++) {
+      const phrase = kwWords.slice(i).join(" ");
+      if (phrase.length < 4) continue;
 
-    if (productWords.length > 0) {
-      // Find sibling deals that contain any product word
-      const siblingMatches = deals.filter(
+      const siblings = otherDeals.filter(
         (d) =>
-          !directMatches.includes(d) &&
-          productWords.some((pw) => d.name.toLowerCase().includes(pw))
+          d.name.toLowerCase().includes(phrase) ||
+          d.description.toLowerCase().includes(phrase)
       );
 
-      // Combine: direct matches first, then siblings
-      const matchedIds = new Set(directMatches.map((d) => d.id));
-      const combined = [...directMatches];
-      for (const sibling of siblingMatches) {
-        if (!matchedIds.has(sibling.id)) {
-          combined.push(sibling);
-          matchedIds.add(sibling.id);
-        }
+      if (siblings.length > 0) {
+        return [...directMatches, ...siblings];
       }
-      return combined;
     }
   }
 
