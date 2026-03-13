@@ -270,7 +270,7 @@ export default function LandingPage() {
               />
             </Link>
             <span className="text-sm text-white/40">
-              Free forever. No account needed.
+              Free forever. Sign up in seconds.
             </span>
           </div>
 
@@ -607,11 +607,11 @@ export default function LandingPage() {
           <AnimateIn delay>
             <FAQItem
               question="Is this really free?"
-              answer="Yes, completely free. No ads, no premium tier, no hidden costs. This is a community tool built for Publix shoppers."
+              answer="Yes, completely free. The app is ad-supported, but there are no premium tiers or hidden costs."
             />
             <FAQItem
               question="Do I need to create an account?"
-              answer="Nope. Your shopping list is saved locally on your device. You can optionally create an account to sync across devices, but it&#39;s not required."
+              answer="Yes, you&#39;ll need to create a free account to use the app. This lets us save your shopping list and preferences so everything is ready when you come back."
             />
             <FAQItem
               question="How often are deals updated?"
@@ -662,7 +662,7 @@ export default function LandingPage() {
             />
           </Link>
           <p className="mt-4 text-sm text-white/30">
-            Free. No account required. Works on any device.
+            Free. Works on any device. Sign up in seconds.
           </p>
         </div>
       </section>
@@ -709,7 +709,7 @@ export default function LandingPage() {
                 Ready to save on your next Publix trip?
               </p>
               <p className="text-xs text-white/40">
-                Free. Works on any device.
+                Free. Sign up in seconds.
               </p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
