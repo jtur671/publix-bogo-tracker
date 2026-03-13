@@ -40,13 +40,15 @@ export interface WatchlistItem {
   added_at: string;
   last_matched_deal_id: number | null;
   last_notified_at: string | null;
+  user_id?: string;
 }
 
 export interface StoreConfig {
-  id: number;
+  id: number | string;
   zip_code: string;
   store_name: string | null;
   updated_at: string;
+  user_id?: string;
 }
 
 export interface PushSubscription {
@@ -57,6 +59,7 @@ export interface PushSubscription {
     auth: string;
   };
   created_at: string;
+  user_id?: string;
 }
 
 export type Category = {
@@ -64,3 +67,19 @@ export type Category = {
   icon: string;
   keywords: string[];
 };
+
+export interface ShoppingTripItem {
+  id: string;
+  name: string;
+  checked: boolean;
+  checked_at: string | null;
+  has_bogo: boolean;
+  added_at: string;
+}
+
+export interface ShoppingTrip {
+  id: string;
+  started_at: string;
+  completed_at: string | null;
+  items: ShoppingTripItem[];
+}

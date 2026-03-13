@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { useStoreConfig } from "@/hooks/use-store-config";
 import { useWatchlist } from "@/hooks/use-watchlist";
+import { useAuth } from "@/context/auth-context";
 import { useDealsContext } from "@/context/deals-context";
 import { BottomNav } from "@/components/bottom-nav";
 import { ZipCodeModal } from "@/components/zip-code-modal";
 import { InstallPrompt } from "@/components/install-prompt";
-import { MapPin, Trash2, Info, ExternalLink } from "lucide-react";
+import { MapPin, Trash2, Info, LogOut, User } from "lucide-react";
 
 export default function SettingsPage() {
   const { zipCode, updateZip } = useStoreConfig();
+  const { user, signOut } = useAuth();
   const { deals } = useDealsContext();
   const { items: watchlist, isWatched } = useWatchlist();
   const [showZipModal, setShowZipModal] = useState(false);
@@ -87,15 +89,23 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Supabase setup hint */}
-        <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-xs font-medium mb-1">Cross-Device Sync</p>
-          <p className="text-xs text-muted">
-            To sync your watchlist across devices, set up Supabase and add your
-            keys to <code className="bg-gray-200 px-1 rounded">.env.local</code>.
-            Without Supabase, data is stored locally in your browser.
-          </p>
-        </div>
+        {/* Account */}
+        {user && (
+          <div className="bg-white rounded-xl border border-border p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <User size={20} className="text-publix-green" />
+              <p className="text-sm font-medium">Account</p>
+            </div>
+            <p className="text-xs text-muted mb-3">{user.email}</p>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-2 text-sm text-danger font-medium hover:underline"
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          </div>
+        )}
       </div>
 
       <BottomNav watchlistMatchCount={watchlistMatchCount} />

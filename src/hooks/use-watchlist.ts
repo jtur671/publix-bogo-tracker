@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/context/auth-context";
 import type { WatchlistItem, Deal } from "@/types";
 
 const LOCAL_KEY = "bogo-watchlist";
@@ -34,24 +35,25 @@ function saveLocalChecked(checked: Set<string>) {
 }
 
 export function useWatchlist() {
+  const { user } = useAuth();
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [useSupabase, setUseSupabase] = useState(false);
 
   const loadWatchlist = useCallback(async () => {
-    try {
-      const { getWatchlist } = await import("@/lib/watchlist");
-      const data = await getWatchlist();
-      setItems(data);
-      setUseSupabase(true);
-    } catch {
-      // Supabase not configured — use localStorage
+    if (user) {
+      try {
+        const { getWatchlist } = await import("@/lib/watchlist");
+        const data = await getWatchlist();
+        setItems(data);
+      } catch {
+        setItems(getLocalWatchlist());
+      }
+    } else {
       setItems(getLocalWatchlist());
-      setUseSupabase(false);
     }
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadWatchlist();
@@ -63,7 +65,7 @@ export function useWatchlist() {
       const trimmed = keyword.toLowerCase().trim();
       if (!trimmed) return;
 
-      if (useSupabase) {
+      if (user) {
         try {
           const { addToWatchlist } = await import("@/lib/watchlist");
           await addToWatchlist(trimmed);
@@ -87,12 +89,12 @@ export function useWatchlist() {
       saveLocalWatchlist(updated);
       setItems(updated);
     },
-    [useSupabase, loadWatchlist]
+    [user, loadWatchlist]
   );
 
   const removeKeyword = useCallback(
     async (id: string) => {
-      if (useSupabase) {
+      if (user) {
         try {
           const { removeFromWatchlist } = await import("@/lib/watchlist");
           await removeFromWatchlist(id);
@@ -114,7 +116,7 @@ export function useWatchlist() {
         saveLocalChecked(newChecked);
       }
     },
-    [useSupabase, loadWatchlist, checkedItems]
+    [user, loadWatchlist, checkedItems]
   );
 
   const toggleChecked = useCallback(

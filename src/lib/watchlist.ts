@@ -1,7 +1,8 @@
-import { supabase } from "./supabase";
+import { createClient } from "@/lib/supabase/client";
 import type { WatchlistItem } from "@/types";
 
 export async function getWatchlist(): Promise<WatchlistItem[]> {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("watchlist")
     .select("*")
@@ -12,9 +13,18 @@ export async function getWatchlist(): Promise<WatchlistItem[]> {
 }
 
 export async function addToWatchlist(keyword: string): Promise<WatchlistItem> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   const { data, error } = await supabase
     .from("watchlist")
-    .upsert({ keyword: keyword.toLowerCase().trim() }, { onConflict: "keyword" })
+    .upsert(
+      { keyword: keyword.toLowerCase().trim(), user_id: user.id },
+      { onConflict: "user_id,keyword" }
+    )
     .select()
     .single();
 
@@ -23,6 +33,7 @@ export async function addToWatchlist(keyword: string): Promise<WatchlistItem> {
 }
 
 export async function removeFromWatchlist(id: string): Promise<void> {
+  const supabase = createClient();
   const { error } = await supabase.from("watchlist").delete().eq("id", id);
   if (error) throw error;
 }
@@ -31,6 +42,7 @@ export async function updateLastMatch(
   id: string,
   dealId: number
 ): Promise<void> {
+  const supabase = createClient();
   const { error } = await supabase
     .from("watchlist")
     .update({ last_matched_deal_id: dealId })

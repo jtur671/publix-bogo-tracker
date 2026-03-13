@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Fraunces } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { AuthProvider } from "@/context/auth-context";
 import { DealsProvider } from "@/context/deals-context";
 import "./globals.css";
 
@@ -43,9 +44,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${jakarta.variable} ${fraunces.variable} antialiased bg-background`}>
         <ServiceWorkerRegister />
-        <DealsProvider>
-          {children}
-        </DealsProvider>
+        <AuthProvider>
+          <DealsProvider>
+            {children}
+          </DealsProvider>
+        </AuthProvider>
       </body>
     </html>
   );
