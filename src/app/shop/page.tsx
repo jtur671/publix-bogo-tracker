@@ -100,7 +100,7 @@ export default function ShopPage() {
       onRemoveItem={removeItem}
       onDone={() => {
         endTrip();
-        router.push("/");
+        router.push("/app");
       }}
     />
   );

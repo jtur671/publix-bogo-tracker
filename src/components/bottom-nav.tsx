@@ -6,7 +6,7 @@ import { Home, Tag, Heart, ShoppingCart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/app", label: "Home", icon: Home },
   { href: "/deals", label: "Deals", icon: Tag },
   { href: "/watchlist", label: "Watchlist", icon: Heart },
   { href: "/shop", label: "Shop", icon: ShoppingCart },
@@ -22,7 +22,7 @@ export function BottomNav({ watchlistMatchCount }: { watchlistMatchCount?: numbe
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
-          const showBadge = tab.href === "/" && watchlistMatchCount && watchlistMatchCount > 0;
+          const showBadge = tab.href === "/app" && watchlistMatchCount && watchlistMatchCount > 0;
 
           return (
             <Link

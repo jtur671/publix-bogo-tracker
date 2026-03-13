@@ -54,6 +54,31 @@ export function ShopMode({
     [items]
   );
 
+  const bogoMatches = useMemo(() => {
+    const query = inputValue.trim().toLowerCase();
+    if (query.length < 2) return [];
+    const seen = new Set<string>();
+    return deals
+      .filter((d) => {
+        const key = d.name.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return (
+          key.includes(query) ||
+          d.description.toLowerCase().includes(query)
+        );
+      })
+      .slice(0, 10);
+  }, [inputValue, deals]);
+
+  const filteredSearchResults = useMemo(() => {
+    if (bogoMatches.length === 0) return searchResults;
+    const bogoNames = new Set(bogoMatches.map((d) => d.name.toLowerCase()));
+    return searchResults.filter(
+      (r) => !bogoNames.has(r.name.toLowerCase())
+    );
+  }, [searchResults, bogoMatches]);
+
   const totalCount = items.length;
   const checkedCount = checkedItems.length;
 
@@ -102,6 +127,13 @@ export function ShopMode({
     };
   }, [inputValue, doSearch]);
 
+  // Show results immediately when BOGO matches exist
+  useEffect(() => {
+    if (inputValue.trim().length >= 2 && bogoMatches.length > 0) {
+      setShowResults(true);
+    }
+  }, [inputValue, bogoMatches]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
@@ -114,6 +146,13 @@ export function ShopMode({
   const handleSelectResult = (result: SearchResult) => {
     const keyword = result.name.replace(/\s*BOGO\*?\s*$/i, "").trim();
     onAddItem(keyword);
+    setInputValue("");
+    setShowResults(false);
+  };
+
+  const handleSelectBogoDeal = (deal: Deal) => {
+    const name = deal.name.replace(/\s*BOGO\*?\s*$/i, "").trim();
+    onAddItem(name);
     setInputValue("");
     setShowResults(false);
   };
@@ -174,7 +213,8 @@ export function ShopMode({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onFocus={() => {
-                  if (searchResults.length > 0) setShowResults(true);
+                  if (searchResults.length > 0 || bogoMatches.length > 0)
+                    setShowResults(true);
                 }}
                 placeholder="Add an item..."
                 className="flex-1 text-base bg-transparent outline-none placeholder:text-gray-400"
@@ -192,35 +232,101 @@ export function ShopMode({
           </form>
 
           {/* Search results dropdown */}
-          {showResults && !searching && inputValue.trim().length >= 2 && (
+          {showResults &&
+            inputValue.trim().length >= 2 &&
+            (bogoMatches.length > 0 || !searching) && (
             <>
               <div
                 className="fixed inset-0 z-10"
                 onClick={() => setShowResults(false)}
               />
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl border border-gray-200 shadow-lg z-20 overflow-hidden max-h-[300px] overflow-y-auto">
-                {searchResults.map((result) => (
-                  <button
-                    key={result.id}
-                    onClick={() => handleSelectResult(result)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
-                  >
-                    <span className="text-base text-gray-900 flex-1">
-                      {result.name}
-                    </span>
-                    {result.isBogo && (
-                      <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
-                        BOGO
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl border border-gray-200 shadow-lg z-20 overflow-hidden max-h-[400px] overflow-y-auto">
+                {/* BOGO Deals section */}
+                {bogoMatches.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 bg-green-50 border-b border-green-100">
+                      <span className="text-xs font-bold text-green-700 uppercase tracking-wide">
+                        BOGO Deals
                       </span>
-                    )}
-                    <Plus size={18} className="text-gray-400 flex-shrink-0" />
-                  </button>
-                ))}
-                {searchResults.length === 0 && (
-                  <div className="px-4 py-3 text-center text-sm text-gray-500">
-                    No products found
+                    </div>
+                    {bogoMatches.map((deal) => (
+                      <button
+                        key={deal.id}
+                        onClick={() => handleSelectBogoDeal(deal)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+                      >
+                        {deal.imageUrl && (
+                          <img
+                            src={deal.imageUrl}
+                            alt=""
+                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+                          />
+                        )}
+                        <span className="text-base text-gray-900 flex-1">
+                          {deal.name.replace(/\s*BOGO\*?\s*$/i, "").trim()}
+                        </span>
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
+                          BOGO
+                        </span>
+                        <Plus
+                          size={18}
+                          className="text-gray-400 flex-shrink-0"
+                        />
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {/* All Products divider */}
+                {bogoMatches.length > 0 &&
+                  filteredSearchResults.length > 0 &&
+                  !searching && (
+                    <div className="px-4 py-2 bg-gray-50 border-y border-gray-100">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        All Products
+                      </span>
+                    </div>
+                  )}
+
+                {/* Loading indicator for search results */}
+                {searching && bogoMatches.length > 0 && (
+                  <div className="px-4 py-3 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-publix-green rounded-full animate-spin" />
                   </div>
                 )}
+
+                {/* Flipp search results */}
+                {!searching && (
+                  <>
+                    {filteredSearchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        onClick={() => handleSelectResult(result)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+                      >
+                        <span className="text-base text-gray-900 flex-1">
+                          {result.name}
+                        </span>
+                        {result.isBogo && bogoMatches.length === 0 && (
+                          <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
+                            BOGO
+                          </span>
+                        )}
+                        <Plus
+                          size={18}
+                          className="text-gray-400 flex-shrink-0"
+                        />
+                      </button>
+                    ))}
+                    {filteredSearchResults.length === 0 &&
+                      bogoMatches.length === 0 && (
+                        <div className="px-4 py-3 text-center text-sm text-gray-500">
+                          No products found
+                        </div>
+                      )}
+                  </>
+                )}
+
                 <button
                   onClick={handleSubmit as () => void}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left border-t border-gray-100"

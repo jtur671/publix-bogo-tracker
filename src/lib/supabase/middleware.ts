@@ -34,6 +34,7 @@ export async function updateSession(request: NextRequest) {
   // Redirect unauthenticated users to /login (except for public routes)
   if (
     !user &&
+    pathname !== "/" &&
     pathname !== "/login" &&
     !pathname.startsWith("/api/") &&
     !pathname.startsWith("/_next/") &&
@@ -49,7 +50,7 @@ export async function updateSession(request: NextRequest) {
   // Redirect authenticated users away from /login
   if (user && pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/app";
     return NextResponse.redirect(url);
   }
 

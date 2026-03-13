@@ -18,8 +18,32 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Publix BOGO Tracker",
-  description: "Track Publix Buy One Get One deals at your local store",
+  title: "Publix BOGO Tracker — Never Miss a Deal Again",
+  description:
+    "Track every Publix Buy One Get One deal automatically. Build your shopping list, get matched to BOGO deals, and shop smarter with Shop Mode. Free, no account required.",
+  openGraph: {
+    title: "Stop leaving free groceries on the shelf",
+    description:
+      "Publix runs 100+ BOGO deals every week. This app matches them to your shopping list automatically — so you never miss a deal you actually want.",
+    type: "website",
+    siteName: "Publix BOGO Tracker",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Stop leaving free groceries on the shelf",
+    description:
+      "Track every Publix BOGO deal. Match your shopping list. Save money every single week.",
+  },
+  keywords: [
+    "Publix BOGO",
+    "Publix deals",
+    "Buy One Get One",
+    "grocery deals",
+    "Publix shopping list",
+    "grocery savings",
+    "Publix app",
+    "BOGO tracker",
+  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

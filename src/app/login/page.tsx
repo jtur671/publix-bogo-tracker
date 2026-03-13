@@ -26,7 +26,7 @@ export default function LoginPage() {
       setError(error);
       setSubmitting(false);
     } else {
-      router.push("/");
+      router.push("/app");
       router.refresh();
     }
   };
