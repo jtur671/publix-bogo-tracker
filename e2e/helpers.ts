@@ -217,3 +217,24 @@ export async function clearLocalStorage(page: Page) {
     localStorage.clear();
   });
 }
+
+/**
+ * Sign in as the e2e test user via the login page.
+ * This creates a real Supabase session so the middleware allows access to
+ * protected routes like /app, /deals, /watchlist, etc.
+ *
+ * Test user credentials (created via Supabase sign-up):
+ *   email:    e2e-test@example.com
+ *   password: test123456
+ */
+export async function signInTestUser(page: Page) {
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+
+  await page.getByLabel("Email").fill("e2e-test@example.com");
+  await page.getByLabel("Password").fill("test123456");
+  await page.getByRole("button", { name: "Sign In" }).click();
+
+  // Wait for redirect to /app after successful sign-in
+  await page.waitForURL("**/app", { timeout: 15000 });
+}

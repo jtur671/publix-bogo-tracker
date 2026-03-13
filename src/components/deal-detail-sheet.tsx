@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
-import { X, ShoppingBag, Heart, HeartOff, Clock, Tag } from "lucide-react";
+import { X, ShoppingBag, Heart, HeartOff, Clock, Tag, ExternalLink, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEAL_TYPE_CONFIG, cleanDealSuffix } from "@/lib/deal-type";
 import type { Deal } from "@/types";
@@ -34,10 +34,12 @@ export function DealDetailSheet({
   const [translateY, setTranslateY] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Animate in
   useEffect(() => {
     if (deal) {
+      setCopied(false);
       // Small delay to trigger CSS transition
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -251,6 +253,37 @@ export function DealDetailSheet({
               </div>
             </div>
           </div>
+
+          {/* Clip coupon — only for coupon deals */}
+          {deal.dealType === "coupon" && (
+            <div className="mb-3 space-y-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(cleanName);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className={cn(
+                  "w-full py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] border-2",
+                  copied
+                    ? "bg-purple-50 border-purple-300 text-purple-700"
+                    : "bg-purple-50 border-purple-200 text-purple-700 hover:border-purple-300"
+                )}
+              >
+                {copied ? <Check size={16} /> : <Copy size={16} />}
+                {copied ? `"${cleanName}" copied!` : `Copy "${cleanName}" to search`}
+              </button>
+              <a
+                href="https://www.publix.com/savings/digital-coupons"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-purple-600 text-white shadow-lg shadow-purple-600/25"
+              >
+                <ExternalLink size={18} />
+                Open Publix Digital Coupons
+              </a>
+            </div>
+          )}
 
           {/* Action button */}
           <button

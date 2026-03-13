@@ -3,6 +3,7 @@ import {
   setupMockRoutes,
   dismissZipModal,
   clearLocalStorage,
+  signInTestUser,
   MOCK_DEALS,
 } from "./helpers";
 
@@ -194,5 +195,47 @@ test.describe("Bug Regressions", () => {
     const searchSection = page.locator('[aria-label="Shopping list"]');
     const z50InSearch = searchSection.locator(".z-50");
     await expect(z50InSearch).toHaveCount(0);
+  });
+
+  // ─── BUG-008: Clip Coupon UI appears only on coupon deals ───
+  test("BUG-008 — clip coupon UI visible on coupon deals, hidden on BOGO deals", async ({
+    page,
+  }) => {
+    await setupMockRoutes(page);
+    await signInTestUser(page);
+    await dismissZipModal(page);
+
+    await page.goto("/app");
+    await page.waitForLoadState("networkidle");
+
+    // Open a coupon deal (Kellogg's Pop-Tarts, id 1008)
+    await page.getByText("Kellogg's Pop-Tarts").click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // The copy button and Publix link should be visible
+    const copyBtn = dialog.getByRole("button", { name: /Copy.*to search/ });
+    await expect(copyBtn).toBeVisible();
+    const clipLink = dialog.getByRole("link", { name: "Open Publix Digital Coupons" });
+    await expect(clipLink).toBeVisible();
+    await expect(clipLink).toHaveAttribute("href", "https://www.publix.com/savings/digital-coupons");
+    await expect(clipLink).toHaveAttribute("target", "_blank");
+
+    // Close the detail sheet
+    await dialog.getByRole("button", { name: "Close deal details" }).click();
+    await expect(dialog).not.toBeVisible();
+
+    // Open a BOGO deal (Cheerios Cereal, id 1001)
+    await page.getByText("Cheerios Cereal").click();
+
+    const bogoDialog = page.getByRole("dialog");
+    await expect(bogoDialog).toBeVisible();
+
+    // Neither clip coupon element should be present
+    const bogoClipLink = bogoDialog.getByRole("link", { name: "Open Publix Digital Coupons" });
+    await expect(bogoClipLink).toHaveCount(0);
+    const bogoCopyBtn = bogoDialog.getByRole("button", { name: /Copy.*to search/ });
+    await expect(bogoCopyBtn).toHaveCount(0);
   });
 });
