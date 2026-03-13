@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Tag, Heart, Bell, Settings } from "lucide-react";
+import { Home, Tag, Heart, ShoppingCart, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/", label: "Home", icon: Home },
   { href: "/deals", label: "Deals", icon: Tag },
   { href: "/watchlist", label: "Watchlist", icon: Heart },
-  { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/shop", label: "Shop", icon: ShoppingCart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

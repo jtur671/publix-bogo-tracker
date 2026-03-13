@@ -174,3 +174,55 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
+
+/* Shopping mode — thick strikethrough */
+@keyframes shop-strike {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.shop-strike {
+  position: relative;
+}
+.shop-strike::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 3px;
+  width: 100%;
+  background: var(--muted);
+  animation: shop-strike 0.25s ease-out forwards;
+}
+
+/* Shopping mode — item exit (fade + sink) */
+@keyframes shop-item-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0.5;
+    transform: translateY(4px);
+  }
+}
+
+.shop-item-exit {
+  animation: shop-item-exit 0.3s ease-out forwards;
+}
+
+/* Shopping mode — item enter (slide in) */
+@keyframes shop-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.shop-item-enter {
+  animation: shop-item-enter 0.25s ease-out forwards;
+}
