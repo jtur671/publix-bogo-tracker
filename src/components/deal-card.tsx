@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Heart, Clock, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DEAL_TYPE_CONFIG, cleanDealSuffix } from "@/lib/deal-type";
 import type { Deal } from "@/types";
 
 interface DealCardProps {
@@ -38,12 +39,16 @@ export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProp
           </div>
         )}
 
-        {/* BOGO badge — sticker style */}
+        {/* Deal type badge — sticker style */}
         <div
-          className="absolute top-2.5 left-2.5 bg-publix-green text-white text-[9px] font-extrabold tracking-wider uppercase px-2 py-1 rounded-lg shadow-[0_2px_8px_-2px_rgba(46,125,22,0.5)]"
+          className={cn(
+            "absolute top-2.5 left-2.5 text-white text-[9px] font-extrabold tracking-wider uppercase px-2 py-1 rounded-lg",
+            DEAL_TYPE_CONFIG[deal.dealType].bg,
+            DEAL_TYPE_CONFIG[deal.dealType].shadow
+          )}
           style={{ transform: "rotate(-3deg)" }}
         >
-          BOGO
+          {DEAL_TYPE_CONFIG[deal.dealType].label}
         </div>
 
         {/* Heart button */}
@@ -78,10 +83,10 @@ export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProp
       {/* Info */}
       <div className="p-3">
         <h3 className="text-[13px] font-bold leading-tight line-clamp-2 text-foreground">
-          {deal.name}
+          {cleanDealSuffix(deal.name)}
         </h3>
         {deal.saleStory && (
-          <p className="text-[11px] text-publix-green font-bold mt-1">
+          <p className={cn("text-[11px] font-bold mt-1", DEAL_TYPE_CONFIG[deal.dealType].textColor)}>
             {deal.saleStory}
           </p>
         )}

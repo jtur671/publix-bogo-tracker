@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import { X, ShoppingBag, Heart, HeartOff, Clock, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DEAL_TYPE_CONFIG, cleanDealSuffix } from "@/lib/deal-type";
 import type { Deal } from "@/types";
 
 interface DealDetailSheetProps {
@@ -103,7 +104,7 @@ export function DealDetailSheet({
 
   if (!deal) return null;
 
-  const cleanName = deal.name.replace(/\s*BOGO\*?\s*$/i, "").trim();
+  const cleanName = cleanDealSuffix(deal.name);
 
   return (
     <div
@@ -167,12 +168,15 @@ export function DealDetailSheet({
               </div>
             )}
 
-            {/* BOGO sticker */}
+            {/* Deal type sticker */}
             <div
-              className="absolute top-3 left-3 bg-publix-green text-white text-xs font-extrabold tracking-wider uppercase px-3 py-1.5 rounded-xl shadow-lg"
+              className={cn(
+                "absolute top-3 left-3 text-white text-xs font-extrabold tracking-wider uppercase px-3 py-1.5 rounded-xl shadow-lg",
+                DEAL_TYPE_CONFIG[deal.dealType].bg
+              )}
               style={{ transform: "rotate(-3deg)" }}
             >
-              BOGO
+              {DEAL_TYPE_CONFIG[deal.dealType].label}
             </div>
 
             {/* Expiring soon badge */}
@@ -200,7 +204,7 @@ export function DealDetailSheet({
 
           {/* Sale story */}
           {deal.saleStory && (
-            <p className="text-base font-bold text-publix-green mb-2">
+            <p className={cn("text-base font-bold mb-2", DEAL_TYPE_CONFIG[deal.dealType].textColor)}>
               {deal.saleStory}
             </p>
           )}

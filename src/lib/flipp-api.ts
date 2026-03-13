@@ -1,4 +1,4 @@
-import type { Deal, FlippItem } from "@/types";
+import type { Deal, DealType, FlippItem } from "@/types";
 import { classifyDeal } from "./categories";
 
 const FLIPP_BASE = "https://backflipp.wishabi.com/flipp/items/search";
@@ -11,7 +11,7 @@ function daysUntil(dateStr: string): number {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-function transformToDeal(item: FlippItem): Deal {
+function transformToDeal(item: FlippItem, dealType: DealType): Deal {
   const daysLeft = daysUntil(item.valid_to);
   return {
     id: item.id,
@@ -27,11 +27,16 @@ function transformToDeal(item: FlippItem): Deal {
     daysLeft,
     isExpiringSoon: daysLeft <= 2,
     merchantName: item.merchant_name,
+    dealType,
   };
 }
 
-export async function fetchPublixDeals(zipCode: string): Promise<Deal[]> {
-  const url = `${FLIPP_BASE}?locale=en-us&postal_code=${encodeURIComponent(zipCode)}&q=bogo`;
+async function fetchDealsByQuery(
+  zipCode: string,
+  query: string,
+  dealType: DealType
+): Promise<Deal[]> {
+  const url = `${FLIPP_BASE}?locale=en-us&postal_code=${encodeURIComponent(zipCode)}&q=${encodeURIComponent(query)}`;
 
   const response = await fetch(url, {
     next: { revalidate: 3600 },
@@ -49,8 +54,31 @@ export async function fetchPublixDeals(zipCode: string): Promise<Deal[]> {
 
   return items
     .filter((item) => item.merchant_id === PUBLIX_MERCHANT_ID)
-    .map(transformToDeal)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .map((item) => transformToDeal(item, dealType));
+}
+
+export async function fetchPublixDeals(zipCode: string): Promise<Deal[]> {
+  const results = await Promise.allSettled([
+    fetchDealsByQuery(zipCode, "bogo", "bogo"),
+    fetchDealsByQuery(zipCode, "save", "sale"),
+    fetchDealsByQuery(zipCode, "coupon", "coupon"),
+  ]);
+
+  const seen = new Set<number>();
+  const deals: Deal[] = [];
+
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      for (const deal of result.value) {
+        if (!seen.has(deal.id)) {
+          seen.add(deal.id);
+          deals.push(deal);
+        }
+      }
+    }
+  }
+
+  return deals.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function searchPublixProducts(zipCode: string, query: string): Promise<Deal[]> {
@@ -72,7 +100,7 @@ export async function searchPublixProducts(zipCode: string, query: string): Prom
 
   return items
     .filter((item) => item.merchant_id === PUBLIX_MERCHANT_ID)
-    .map(transformToDeal)
+    .map((item) => transformToDeal(item, "bogo"))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

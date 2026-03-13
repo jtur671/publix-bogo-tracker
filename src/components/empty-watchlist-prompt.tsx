@@ -21,7 +21,7 @@ export function EmptyWatchlistPrompt({
           No matches this week
         </h3>
         <p className="text-xs text-muted mt-1.5 max-w-[260px] mx-auto leading-relaxed">
-          None of your shopping list items are on BOGO right now. We will notify
+          None of your shopping list items are on sale right now. We&apos;ll notify
           you when they go on sale!
         </p>
         <div className="flex items-center justify-center gap-3 mt-4">
@@ -54,8 +54,8 @@ export function EmptyWatchlistPrompt({
         Start your shopping list
       </h3>
       <p className="text-xs text-muted mt-1.5 max-w-[260px] mx-auto leading-relaxed">
-        Add items you buy regularly. We will tag them with a BOGO badge when
-        they go on sale so you never miss a deal.
+        Add items you buy regularly. We&apos;ll tag them when they go on sale so
+        you never miss a deal.
       </p>
       <div className="flex items-center justify-center gap-3 mt-4">
         <Link

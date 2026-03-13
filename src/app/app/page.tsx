@@ -14,12 +14,16 @@ import { BottomNav } from "@/components/bottom-nav";
 import { ZipCodeModal } from "@/components/zip-code-modal";
 import { InstallPrompt } from "@/components/install-prompt";
 import { getRecommendations, getTopAffinityCategories } from "@/lib/recommendations";
+import { useAuth } from "@/context/auth-context";
 import { ShoppingBag, Sparkles, Tag } from "lucide-react";
 import Link from "next/link";
+import { AdSlot } from "@/components/ad-slot";
+import { cleanDealSuffix } from "@/lib/deal-type";
 import type { Deal } from "@/types";
 import { useState } from "react";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const { zipCode, needsSetup, updateZip } = useStoreConfig();
   const { deals, loading, error } = useDealsContext();
   const {
@@ -35,16 +39,17 @@ export default function HomePage() {
   const [showZipModal, setShowZipModal] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
-  // Count how many watchlist items currently match a BOGO deal
+  // Count how many watchlist items currently match a deal
+  // Uses nameEndsWith (same logic as ShoppingList) so header badge matches list count
   const watchlistMatchCount = useMemo(() => {
     if (watchlist.length === 0 || deals.length === 0) return 0;
     return watchlist.filter((item) => {
-      const kw = item.keyword.toLowerCase();
-      return deals.some(
-        (d) =>
-          d.name.toLowerCase().includes(kw) ||
-          d.description.toLowerCase().includes(kw)
-      );
+      const kw = cleanDealSuffix(item.keyword).toLowerCase();
+      if (!kw) return false;
+      return deals.some((d) => {
+        const clean = cleanDealSuffix(d.name).toLowerCase();
+        return clean === kw || clean.endsWith(` ${kw}`);
+      });
     }).length;
   }, [watchlist, deals]);
 
@@ -93,6 +98,7 @@ export default function HomePage() {
         validFrom={validFrom}
         validTo={validTo}
         onChangeZip={() => setShowZipModal(true)}
+        userName={user?.email?.split("@")[0]}
       />
 
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-6">
@@ -110,7 +116,7 @@ export default function HomePage() {
             title="Shopping List"
             subtitle={
               watchlist.length > 0
-                ? `${watchlistMatchCount} of ${watchlist.length} items on BOGO`
+                ? `${watchlistMatchCount} of ${watchlist.length} items on sale`
                 : "Add items you buy regularly"
             }
             icon={<ShoppingBag size={16} className="text-publix-green" />}
@@ -156,6 +162,9 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Ad placement between sections */}
+        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
+
         {/* Section 2: You Might Also Like */}
         {watchlist.length > 0 && !loading && (
           <section aria-label="Recommended deals">
@@ -200,7 +209,7 @@ export default function HomePage() {
           <section aria-label="Browse deals">
             <SectionHeader
               title="This Week's Deals"
-              subtitle={`${deals.length} BOGO deals available`}
+              subtitle={`${deals.length} deals available`}
               icon={<Tag size={16} className="text-publix-green" />}
               action={{ label: "See all", href: "/deals" }}
             />

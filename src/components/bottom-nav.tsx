@@ -22,7 +22,7 @@ export function BottomNav({ watchlistMatchCount }: { watchlistMatchCount?: numbe
         {tabs.map((tab) => {
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
-          const showBadge = tab.href === "/app" && watchlistMatchCount && watchlistMatchCount > 0;
+          const showBadge = tab.href === "/app" && (watchlistMatchCount ?? 0) > 0;
 
           return (
             <Link

@@ -5,7 +5,8 @@ import { Plus, RotateCcw, Search } from "lucide-react";
 import Image from "next/image";
 import { ShoppingListItem } from "@/components/shopping-list-item";
 import { cn } from "@/lib/utils";
-import type { Deal, WatchlistItem } from "@/types";
+import { cleanDealSuffix, DEAL_TYPE_CONFIG } from "@/lib/deal-type";
+import type { Deal, DealType, WatchlistItem } from "@/types";
 
 interface ShoppingListProps {
   items: WatchlistItem[];
@@ -25,31 +26,35 @@ interface SearchResult {
   name: string;
   imageUrl: string;
   saleStory: string | null;
-  isBogo: boolean;
+  dealType: DealType | null;
 }
 
 /**
- * Find matching BOGO deals for a shopping list keyword.
+ * Find matching deals for a shopping list keyword.
  *
  * For related/sibling deals, we try progressively shorter phrases from the
  * keyword to find the best product-type match. This ensures "string cheese"
  * finds other string cheese deals (not all cheese), while "Sara Lee Butter
  * Bread" still finds other bread deals.
  */
-function findMatchingDeals(item: WatchlistItem, deals: Deal[]): Deal[] {
-  const kw = item.keyword.toLowerCase().trim();
+function cleanKeyword(str: string): string {
+  return cleanDealSuffix(str).toLowerCase();
+}
 
-  // 1. Direct keyword matches
-  const directMatches = deals.filter(
-    (d) =>
-      d.name.toLowerCase().includes(kw) ||
-      d.description.toLowerCase().includes(kw)
-  );
+function nameEndsWith(dealName: string, keyword: string): boolean {
+  const clean = cleanKeyword(dealName);
+  const kw = cleanKeyword(keyword);
+  return clean === kw || clean.endsWith(` ${kw}`);
+}
+
+function findMatchingDeals(item: WatchlistItem, deals: Deal[]): Deal[] {
+  const kw = cleanKeyword(item.keyword);
+  if (!kw) return [];
+
+  // 1. Direct matches — deal name ends with keyword
+  const directMatches = deals.filter((d) => nameEndsWith(d.name, kw));
 
   // 2. Find related deals — only for 3+ word keywords (likely brand + product)
-  //    Short keywords like "string cheese" or "bread" are already product types,
-  //    so direct matches are the full result. Longer keywords like
-  //    "Sara Lee Butter Bread" contain a brand, so we extract the product type.
   const kwWords = kw.split(/\s+/);
   if (directMatches.length > 0 && kwWords.length >= 3) {
     const directIds = new Set(directMatches.map((d) => d.id));
@@ -60,11 +65,7 @@ function findMatchingDeals(item: WatchlistItem, deals: Deal[]): Deal[] {
       const phrase = kwWords.slice(i).join(" ");
       if (phrase.length < 4) continue;
 
-      const siblings = otherDeals.filter(
-        (d) =>
-          d.name.toLowerCase().includes(phrase) ||
-          d.description.toLowerCase().includes(phrase)
-      );
+      const siblings = otherDeals.filter((d) => nameEndsWith(d.name, phrase));
 
       if (siblings.length > 0) {
         return [...directMatches, ...siblings];
@@ -111,18 +112,21 @@ export function ShoppingList({
         if (!res.ok) throw new Error("Search failed");
         const data = await res.json();
 
-        // Check which results are BOGO
-        const bogoNames = new Set(deals.map((d) => d.name.toLowerCase()));
+        // Check which results match current deals
+        const dealsByName = new Map(deals.map((d) => [d.name.toLowerCase(), d]));
 
         const results: SearchResult[] = (data.results || [])
           .slice(0, 8)
-          .map((r: Deal) => ({
-            id: r.id,
-            name: r.name,
-            imageUrl: r.imageUrl,
-            saleStory: r.saleStory,
-            isBogo: bogoNames.has(r.name.toLowerCase()),
-          }));
+          .map((r: Deal) => {
+            const match = dealsByName.get(r.name.toLowerCase());
+            return {
+              id: r.id,
+              name: r.name,
+              imageUrl: r.imageUrl,
+              saleStory: r.saleStory,
+              dealType: match?.dealType ?? null,
+            };
+          });
 
         setSearchResults(results);
         setShowResults(true);
@@ -169,10 +173,7 @@ export function ShoppingList({
   };
 
   const handleSelectResult = (result: SearchResult) => {
-    // Extract a clean keyword from the product name (remove "BOGO*" suffix)
-    const keyword = result.name
-      .replace(/\s*BOGO\*?\s*$/i, "")
-      .trim();
+    const keyword = cleanDealSuffix(result.name);
     onAddItem(keyword);
     setInputValue("");
     setShowResults(false);
@@ -200,7 +201,7 @@ export function ShoppingList({
     items.some((i) => i.id === id)
   ).length;
 
-  const bogoCount = sortedItems.filter(
+  const onSaleCount = sortedItems.filter(
     (s) => s.matchingDeals.length > 0 && !s.isChecked
   ).length;
 
@@ -234,7 +235,7 @@ export function ShoppingList({
       )}
 
       {/* Search/Add input with autocomplete */}
-      <div className="relative z-50">
+      <div className={cn("relative", showResults ? "z-50" : "z-0")}>
         <form onSubmit={handleSubmit}>
           <div className="flex items-center gap-2.5 bg-paper rounded-2xl border-2 border-dashed border-border p-2.5 focus-within:border-publix-green focus-within:border-solid focus-within:shadow-[0_0_0_3px_rgba(59,125,35,0.1)] transition-all">
             <div className="w-8 h-8 rounded-xl bg-publix-green/10 flex items-center justify-center flex-shrink-0">
@@ -286,6 +287,20 @@ export function ShoppingList({
             ref={dropdownRef}
             className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-2xl border border-border shadow-[0_8px_30px_-4px_rgba(0,0,0,0.15)] z-50 overflow-hidden max-h-[360px] overflow-y-auto"
           >
+            {/* Generic add — always at top */}
+            {inputValue.trim() && (
+              <button
+                onClick={handleSubmit as () => void}
+                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-cream/80 transition-colors text-left border-b border-border/50"
+              >
+                <div className="w-10 h-10 rounded-xl bg-publix-green/10 flex items-center justify-center flex-shrink-0">
+                  <Plus size={16} className="text-publix-green" />
+                </div>
+                <span className="text-sm font-semibold text-publix-green">
+                  Add &ldquo;{inputValue.trim()}&rdquo;
+                </span>
+              </button>
+            )}
             {searchResults.length > 0 && (
               <div className="px-3 pt-2.5 pb-1.5">
                 <p className="text-[10px] font-bold text-muted/50 uppercase tracking-wider">
@@ -297,9 +312,6 @@ export function ShoppingList({
               <div className="px-4 py-4 text-center">
                 <p className="text-sm font-semibold text-foreground/70">
                   No products found for &ldquo;{inputValue.trim()}&rdquo;
-                </p>
-                <p className="text-xs text-muted/60 mt-1">
-                  Not in this week&apos;s flyer — add it as a custom item below
                 </p>
               </div>
             )}
@@ -329,16 +341,22 @@ export function ShoppingList({
                     <span className="text-sm font-semibold text-foreground truncate">
                       {result.name}
                     </span>
-                    {result.isBogo && (
-                      <span className="bg-publix-green text-white text-[8px] font-extrabold tracking-wider uppercase px-1.5 py-0.5 rounded-md flex-shrink-0"
+                    {result.dealType && (
+                      <span className={cn(
+                        "text-white text-[8px] font-extrabold tracking-wider uppercase px-1.5 py-0.5 rounded-md flex-shrink-0",
+                        DEAL_TYPE_CONFIG[result.dealType].bg
+                      )}
                         style={{ transform: "rotate(-2deg)" }}
                       >
-                        BOGO
+                        {DEAL_TYPE_CONFIG[result.dealType].label}
                       </span>
                     )}
                   </div>
                   {result.saleStory && (
-                    <p className="text-[11px] font-bold text-publix-green mt-0.5">
+                    <p className={cn(
+                      "text-[11px] font-bold mt-0.5",
+                      result.dealType ? DEAL_TYPE_CONFIG[result.dealType].textColor : "text-muted"
+                    )}>
                       {result.saleStory}
                     </p>
                   )}
@@ -346,29 +364,16 @@ export function ShoppingList({
                 <Plus size={16} className="text-publix-green/50 flex-shrink-0" />
               </button>
             ))}
-            {inputValue.trim() && (
-              <button
-                onClick={handleSubmit as () => void}
-                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-cream/80 transition-colors text-left border-t border-border/50"
-              >
-                <div className="w-10 h-10 rounded-xl bg-publix-green/10 flex items-center justify-center flex-shrink-0">
-                  <Plus size={16} className="text-publix-green" />
-                </div>
-                <span className="text-sm font-semibold text-publix-green">
-                  Add &ldquo;{inputValue.trim()}&rdquo; as custom item
-                </span>
-              </button>
-            )}
           </div>
         )}
       </div>
 
-      {/* BOGO count divider */}
-      {bogoCount > 0 && sortedItems.length > 0 && (
+      {/* On sale count divider */}
+      {onSaleCount > 0 && sortedItems.length > 0 && (
         <div className="flex items-center gap-3 px-1">
           <div className="h-px flex-1 bg-publix-green/15" />
           <span className="text-[11px] font-bold text-publix-green uppercase tracking-wider">
-            {bogoCount} on BOGO
+            {onSaleCount} on sale
           </span>
           <div className="h-px flex-1 bg-publix-green/15" />
         </div>

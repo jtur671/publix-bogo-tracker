@@ -17,6 +17,7 @@ import {
   ListChecks,
   Eye,
 } from "lucide-react";
+import { AdSlot } from "@/components/ad-slot";
 
 /* ==========================================================================
    LANDING PAGE — Publix BOGO Tracker
@@ -252,9 +253,9 @@ export default function LandingPage() {
           {/* Subheadline — specificity sells.
               "Every week" creates urgency without a fake timer. */}
           <p className="mt-6 text-lg sm:text-xl text-white/60 max-w-lg mx-auto leading-relaxed">
-            Publix runs 100+ BOGO deals every week. This app matches them
-            to your shopping list automatically — so you never miss a deal
-            you actually want.
+            Publix runs 100+ deals every week — BOGOs, sales, and coupons.
+            This app matches them to your shopping list automatically — so
+            you never miss a deal you actually want.
           </p>
 
           {/* Primary CTA — big, green, impossible to miss */}
@@ -295,7 +296,7 @@ export default function LandingPage() {
             {
               value: 100,
               suffix: "+",
-              label: "BOGO deals tracked weekly",
+              label: "Deals tracked weekly",
               icon: Tag,
             },
             {
@@ -374,8 +375,8 @@ export default function LandingPage() {
             {/* Step 2 */}
             <StepRow
               stepNumber="02"
-              title="Get matched to BOGO deals"
-              description="Every week, the app checks your list against all active Publix BOGO deals. When there&#39;s a match, you&#39;ll see it instantly."
+              title="Get matched to deals"
+              description="Every week, the app checks your list against all active Publix deals — BOGOs, sales, and coupons. When there's a match, you'll see it instantly."
               features={[
                 "Automatic deal matching",
                 "See deal images and expiration dates",
@@ -401,6 +402,11 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Ad between How It Works and Features */}
+      <div className="py-8 px-5 max-w-4xl mx-auto">
+        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
+      </div>
 
       {/* ================================================================
           FEATURE GRID
@@ -428,8 +434,8 @@ export default function LandingPage() {
             {[
               {
                 icon: Tag,
-                title: "Live BOGO tracking",
-                desc: "Every active Publix BOGO deal, updated weekly. Filterable by category.",
+                title: "Live deal tracking",
+                desc: "Every active Publix deal — BOGOs, sales, and coupons — updated weekly. Filterable by category.",
               },
               {
                 icon: Heart,
@@ -517,7 +523,7 @@ export default function LandingPage() {
               },
               {
                 quote:
-                  "My husband didn&#39;t believe me when I told him how much we were saving. Now he checks the app before every trip too.",
+                  "My husband didn't believe me when I told him how much we were saving. Now he checks the app before every trip too.",
                 name: "Ashley K.",
                 location: "Jacksonville, FL",
                 savings: "$160/month",
@@ -576,7 +582,7 @@ export default function LandingPage() {
             Set up your list in 30 seconds. The deals are already waiting.
           </p>
           <Link
-            href="/"
+            href="/app"
             className="relative inline-flex items-center gap-2 mt-8 bg-white text-publix-green-dark font-bold text-base px-8 py-4 rounded-2xl hover:bg-white/90 active:scale-[0.97] transition-all shadow-lg"
           >
             Open the app
@@ -652,7 +658,7 @@ export default function LandingPage() {
             It takes 30 seconds.
           </p>
           <Link
-            href="/"
+            href="/app"
             className="group inline-flex items-center gap-2.5 mt-10 bg-publix-green hover:bg-publix-green-dark text-white text-lg font-bold px-10 py-5 rounded-2xl transition-all active:scale-[0.97] shadow-[0_0_60px_-12px_rgba(59,125,35,0.6)]"
           >
             Start saving now
@@ -848,7 +854,7 @@ function MockupDealMatch() {
       {/* Header */}
       <div className="bg-publix-green px-4 py-3">
         <p className="text-white text-xs font-bold">This Week&#39;s Deals</p>
-        <p className="text-white/60 text-[10px]">108 BOGO deals available</p>
+        <p className="text-white/60 text-[10px]">108 deals available</p>
       </div>
       {/* Category pills */}
       <div className="px-3 py-2 flex gap-1.5 overflow-hidden">

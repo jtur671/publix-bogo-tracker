@@ -46,7 +46,7 @@ export function ZipCodeModal({
               </h2>
               <p className="text-xs text-muted">
                 {isFirstRun
-                  ? "Enter your zip to find BOGO deals"
+                  ? "Enter your zip to find deals"
                   : "Update your store location"}
               </p>
             </div>

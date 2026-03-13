@@ -8,7 +8,7 @@ test.describe("Navigation", () => {
   });
 
   test("should render all 5 bottom nav tabs", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     const nav = page.locator("nav");
@@ -17,12 +17,12 @@ test.describe("Navigation", () => {
     await expect(nav.getByText("Home")).toBeVisible();
     await expect(nav.getByText("Deals")).toBeVisible();
     await expect(nav.getByText("Watchlist")).toBeVisible();
-    await expect(nav.getByText("Alerts")).toBeVisible();
+    await expect(nav.getByText("Shop")).toBeVisible();
     await expect(nav.getByText("Settings")).toBeVisible();
   });
 
   test("should navigate to Deals page", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     await page.locator("nav").getByText("Deals").click();
@@ -31,7 +31,7 @@ test.describe("Navigation", () => {
   });
 
   test("should navigate to Watchlist page", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     await page.locator("nav").getByText("Watchlist").click();
@@ -39,16 +39,16 @@ test.describe("Navigation", () => {
     await expect(page.getByRole("heading", { name: "Watchlist" })).toBeVisible();
   });
 
-  test("should navigate to Alerts page", async ({ page }) => {
-    await page.goto("/");
+  test("should navigate to Shop page", async ({ page }) => {
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
-    await page.locator("nav").getByText("Alerts").click();
-    await expect(page).toHaveURL("/alerts");
+    await page.locator("nav").getByText("Shop").click();
+    await expect(page).toHaveURL("/shop");
   });
 
   test("should navigate to Settings page", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     await page.locator("nav").getByText("Settings").click();
@@ -60,7 +60,7 @@ test.describe("Navigation", () => {
     await page.waitForLoadState("networkidle");
 
     await page.locator("nav").getByText("Home").click();
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL("/app");
   });
 });
 
@@ -71,7 +71,7 @@ test.describe("Zip Code Modal", () => {
     await clearLocalStorage(page);
     await setupMockRoutes(page);
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     // The modal should appear with "Welcome!" text
@@ -85,7 +85,7 @@ test.describe("Zip Code Modal", () => {
     await clearLocalStorage(page);
     await setupMockRoutes(page);
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     // Fill in zip code
@@ -103,7 +103,7 @@ test.describe("Zip Code Modal", () => {
     await clearLocalStorage(page);
     await setupMockRoutes(page);
 
-    await page.goto("/");
+    await page.goto("/app");
     await page.waitForLoadState("networkidle");
 
     const input = page.getByPlaceholder("Enter zip code (e.g. 34695)");

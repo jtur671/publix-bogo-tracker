@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import { X, ShoppingBag, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { cleanDealSuffix, DEAL_TYPE_CONFIG } from "@/lib/deal-type";
 import type { Deal, WatchlistItem } from "@/types";
 
 interface ShoppingListItemProps {
@@ -43,10 +44,10 @@ function DealThumb({ deal, size = 32 }: { deal: Deal; size?: number }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Clean deal name: strip trailing "BOGO*" suffix                    */
+/*  Clean deal name: strip trailing deal-type suffixes                */
 /* ------------------------------------------------------------------ */
 function cleanDealName(name: string) {
-  return name.replace(/\s*BOGO\*?\s*$/i, "");
+  return cleanDealSuffix(name);
 }
 
 /* ------------------------------------------------------------------ */
@@ -97,7 +98,7 @@ export function ShoppingListItem({
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
-  const hasBogo = matchingDeals.length > 0;
+  const hasDeals = matchingDeals.length > 0;
   const hasMultiple = matchingDeals.length > 1;
   const firstDeal = matchingDeals[0] as Deal | undefined;
 
@@ -121,7 +122,7 @@ export function ShoppingListItem({
           "relative rounded-2xl transition-all duration-200 border",
           isChecked
             ? "bg-cream/80 border-border/50"
-            : hasBogo
+            : hasDeals
             ? "bg-paper border-publix-green/20 shadow-warm"
             : "bg-paper border-border shadow-warm",
           translateX !== 0 && "transition-none"
@@ -148,7 +149,7 @@ export function ShoppingListItem({
           aria-expanded={hasMultiple && !isChecked ? expanded : undefined}
           aria-label={
             hasMultiple && !isChecked
-              ? `${displayName}, ${matchingDeals.length} BOGO brands. Tap to ${expanded ? "collapse" : "expand"}`
+              ? `${displayName}, ${matchingDeals.length} matching deals. Tap to ${expanded ? "collapse" : "expand"}`
               : undefined
           }
         >
@@ -162,7 +163,7 @@ export function ShoppingListItem({
               "w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200",
               isChecked
                 ? "bg-publix-green border-publix-green scale-100"
-                : hasBogo
+                : hasDeals
                 ? "border-publix-green/40 hover:border-publix-green hover:bg-publix-green-light/50"
                 : "border-gray-300 hover:border-muted"
             )}
@@ -189,13 +190,13 @@ export function ShoppingListItem({
             )}
           </button>
 
-          {/* Inline thumbnail for single BOGO match */}
-          {hasBogo && !isChecked && !hasMultiple && firstDeal && (
+          {/* Inline thumbnail for single deal match */}
+          {hasDeals && !isChecked && !hasMultiple && firstDeal && (
             <DealThumb deal={firstDeal} size={32} />
           )}
 
           {/* Stacked thumbnails for multiple matches */}
-          {hasBogo && !isChecked && hasMultiple && (
+          {hasDeals && !isChecked && hasMultiple && (
             <div className="relative flex-shrink-0 w-9 h-8">
               {matchingDeals.slice(0, 2).map((deal, i) => (
                 <div
@@ -229,8 +230,8 @@ export function ShoppingListItem({
 
           {/* Text content */}
           <div className="flex-1 min-w-0">
-            {/* ---- No BOGO ---- */}
-            {!hasBogo && (
+            {/* ---- No deals ---- */}
+            {!hasDeals && (
               <>
                 <span
                   className={cn(
@@ -244,53 +245,57 @@ export function ShoppingListItem({
                 </span>
                 {!isChecked && (
                   <p className="text-[10px] text-muted/50 font-medium leading-tight">
-                    Not on BOGO this week
+                    No deals this week
                   </p>
                 )}
               </>
             )}
 
-            {/* ---- Checked BOGO item (show just the keyword) ---- */}
-            {hasBogo && isChecked && (
+            {/* ---- Checked item with deal (show just the keyword) ---- */}
+            {hasDeals && isChecked && (
               <span className="text-sm font-semibold text-muted/60 line-through decoration-2 block truncate">
                 {displayName}
               </span>
             )}
 
-            {/* ---- Single BOGO match ---- */}
-            {hasBogo && !isChecked && !hasMultiple && firstDeal && (
+            {/* ---- Single deal match ---- */}
+            {hasDeals && !isChecked && !hasMultiple && firstDeal && (
               <div className="min-w-0">
                 <span className="text-[13px] font-semibold text-foreground truncate block leading-tight">
                   {cleanDealName(firstDeal.name)}
                 </span>
                 {firstDeal.saleStory && (
-                  <p className="text-[10px] font-bold text-publix-green leading-tight mt-0.5 truncate">
+                  <p className={cn("text-[10px] font-bold leading-tight mt-0.5 truncate", DEAL_TYPE_CONFIG[firstDeal.dealType].textColor)}>
                     {firstDeal.saleStory}
                   </p>
                 )}
               </div>
             )}
 
-            {/* ---- Multiple BOGO matches ---- */}
-            {hasBogo && !isChecked && hasMultiple && (
+            {/* ---- Multiple deal matches ---- */}
+            {hasDeals && !isChecked && hasMultiple && (
               <div className="min-w-0">
                 <span className="text-[13px] font-semibold text-foreground truncate block leading-tight">
                   {displayName}
                 </span>
                 <p className="text-[10px] font-bold text-publix-green leading-tight mt-0.5">
-                  {matchingDeals.length} brands on BOGO
+                  {matchingDeals.length} matching deals
                 </p>
               </div>
             )}
           </div>
 
-          {/* BOGO sticker */}
-          {hasBogo && !isChecked && (
+          {/* Deal type sticker */}
+          {hasDeals && !isChecked && firstDeal && (
             <span
-              className="bogo-sticker inline-flex items-center bg-publix-green text-white text-[8px] font-extrabold tracking-wider uppercase px-1.5 py-0.5 rounded-md shadow-[0_2px_8px_-2px_rgba(46,125,22,0.4)] flex-shrink-0"
+              className={cn(
+                "bogo-sticker inline-flex items-center text-white text-[8px] font-extrabold tracking-wider uppercase px-1.5 py-0.5 rounded-md flex-shrink-0",
+                DEAL_TYPE_CONFIG[firstDeal.dealType].bg,
+                DEAL_TYPE_CONFIG[firstDeal.dealType].shadow
+              )}
               style={{ transform: "rotate(-2deg)" }}
             >
-              BOGO
+              {DEAL_TYPE_CONFIG[firstDeal.dealType].label}
             </span>
           )}
 
@@ -319,7 +324,7 @@ export function ShoppingListItem({
         </div>
 
         {/* ============================================================ */}
-        {/*  EXPANDABLE DEAL LIST — only for multiple BOGO matches       */}
+        {/*  EXPANDABLE DEAL LIST — only for multiple deal matches       */}
         {/* ============================================================ */}
         {hasMultiple && !isChecked && (
           <div
@@ -343,7 +348,7 @@ export function ShoppingListItem({
                         {cleanDealName(deal.name)}
                       </p>
                       {deal.saleStory && (
-                        <p className="text-[10px] font-bold text-publix-green leading-tight">
+                        <p className={cn("text-[10px] font-bold leading-tight", DEAL_TYPE_CONFIG[deal.dealType].textColor)}>
                           {deal.saleStory}
                         </p>
                       )}
@@ -355,9 +360,12 @@ export function ShoppingListItem({
           </div>
         )}
 
-        {/* Green left accent for BOGO items */}
-        {hasBogo && !isChecked && (
-          <div className="absolute left-0 top-2.5 bottom-2.5 w-[3px] bg-publix-green rounded-r-full" />
+        {/* Left accent for items with deals */}
+        {hasDeals && !isChecked && firstDeal && (
+          <div className={cn(
+            "absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full",
+            DEAL_TYPE_CONFIG[firstDeal.dealType].bg
+          )} />
         )}
       </div>
     </div>

@@ -10,6 +10,7 @@ interface DashboardHeaderProps {
   validFrom?: string;
   validTo?: string;
   onChangeZip: () => void;
+  userName?: string;
 }
 
 function formatDate(dateStr: string): string {
@@ -27,6 +28,7 @@ export function DashboardHeader({
   validFrom,
   validTo,
   onChangeZip,
+  userName,
 }: DashboardHeaderProps) {
   const dateRange =
     validFrom && validTo
@@ -38,6 +40,11 @@ export function DashboardHeader({
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-3">
         <div className="flex items-center justify-between">
           <div>
+            {userName && (
+              <p className="text-white/70 text-xs font-medium mb-0.5">
+                Hi, {userName}
+              </p>
+            )}
             <h1 className="text-xl font-extrabold tracking-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
               Publix BOGO
             </h1>
@@ -63,7 +70,7 @@ export function DashboardHeader({
               {watchlistMatchCount}
             </span>
             <span className="text-sm text-white/80 font-medium">
-              of your {watchlistTotal} {watchlistTotal === 1 ? "item" : "items"} on BOGO this week
+              of your {watchlistTotal} {watchlistTotal === 1 ? "item" : "items"} on sale this week
             </span>
           </div>
         )}

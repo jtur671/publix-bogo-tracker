@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { Plus, Search, ChevronDown, ChevronUp } from "lucide-react";
-import type { Deal, ShoppingTripItem } from "@/types";
+import { Plus, Search, ChevronDown, ChevronUp, ChevronRight, Tag } from "lucide-react";
+import { AdSlot } from "@/components/ad-slot";
+import type { Deal, DealType, ShoppingTripItem } from "@/types";
 import { cn } from "@/lib/utils";
+import { cleanDealSuffix, DEAL_TYPE_CONFIG } from "@/lib/deal-type";
 
 interface ShopModeProps {
   items: ShoppingTripItem[];
@@ -18,7 +20,7 @@ interface ShopModeProps {
 interface SearchResult {
   id: number;
   name: string;
-  isBogo: boolean;
+  dealType: DealType | null;
 }
 
 export function ShopMode({
@@ -36,12 +38,13 @@ export function ShopMode({
   const [showResults, setShowResults] = useState(false);
   const [showBought, setShowBought] = useState(true);
   const [editMode, setEditMode] = useState(false);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const uncheckedItems = useMemo(() => {
     const unchecked = items.filter((i) => !i.checked);
-    // BOGO items first
+    // Items with deals first
     return unchecked.sort((a, b) => {
       if (a.has_bogo && !b.has_bogo) return -1;
       if (!a.has_bogo && b.has_bogo) return 1;
@@ -54,7 +57,7 @@ export function ShopMode({
     [items]
   );
 
-  const bogoMatches = useMemo(() => {
+  const dealMatches = useMemo(() => {
     const query = inputValue.trim().toLowerCase();
     if (query.length < 2) return [];
     const seen = new Set<string>();
@@ -72,12 +75,12 @@ export function ShopMode({
   }, [inputValue, deals]);
 
   const filteredSearchResults = useMemo(() => {
-    if (bogoMatches.length === 0) return searchResults;
-    const bogoNames = new Set(bogoMatches.map((d) => d.name.toLowerCase()));
+    if (dealMatches.length === 0) return searchResults;
+    const matchedNames = new Set(dealMatches.map((d) => d.name.toLowerCase()));
     return searchResults.filter(
-      (r) => !bogoNames.has(r.name.toLowerCase())
+      (r) => !matchedNames.has(r.name.toLowerCase())
     );
-  }, [searchResults, bogoMatches]);
+  }, [searchResults, dealMatches]);
 
   const totalCount = items.length;
   const checkedCount = checkedItems.length;
@@ -99,14 +102,17 @@ export function ShopMode({
         if (!res.ok) throw new Error("Search failed");
         const data = await res.json();
 
-        const bogoNames = new Set(deals.map((d) => d.name.toLowerCase()));
+        const dealsByName = new Map(deals.map((d) => [d.name.toLowerCase(), d]));
         const results: SearchResult[] = (data.results || [])
           .slice(0, 6)
-          .map((r: Deal) => ({
-            id: r.id,
-            name: r.name,
-            isBogo: bogoNames.has(r.name.toLowerCase()),
-          }));
+          .map((r: Deal) => {
+            const match = dealsByName.get(r.name.toLowerCase());
+            return {
+              id: r.id,
+              name: r.name,
+              dealType: match?.dealType ?? null,
+            };
+          });
 
         setSearchResults(results);
         setShowResults(true);
@@ -127,12 +133,12 @@ export function ShopMode({
     };
   }, [inputValue, doSearch]);
 
-  // Show results immediately when BOGO matches exist
+  // Show results immediately when deal matches exist
   useEffect(() => {
-    if (inputValue.trim().length >= 2 && bogoMatches.length > 0) {
+    if (inputValue.trim().length >= 2 && dealMatches.length > 0) {
       setShowResults(true);
     }
-  }, [inputValue, bogoMatches]);
+  }, [inputValue, dealMatches]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,26 +150,69 @@ export function ShopMode({
   };
 
   const handleSelectResult = (result: SearchResult) => {
-    const keyword = result.name.replace(/\s*BOGO\*?\s*$/i, "").trim();
+    const keyword = cleanDealSuffix(result.name);
     onAddItem(keyword);
     setInputValue("");
     setShowResults(false);
   };
 
-  const handleSelectBogoDeal = (deal: Deal) => {
-    const name = deal.name.replace(/\s*BOGO\*?\s*$/i, "").trim();
+  const handleSelectDeal = (deal: Deal) => {
+    const name = cleanDealSuffix(deal.name);
     onAddItem(name);
     setInputValue("");
     setShowResults(false);
   };
 
-  const handleRowTap = (item: ShoppingTripItem) => {
+  const getMatchingDeals = useCallback(
+    (itemName: string): Deal[] => {
+      const keyword = cleanDealSuffix(itemName).toLowerCase();
+      if (!keyword) return [];
+
+      const endsWith = (dealName: string, kw: string) => {
+        const clean = cleanDealSuffix(dealName).toLowerCase();
+        return clean === kw || clean.endsWith(` ${kw}`);
+      };
+
+      // Direct matches
+      const direct = deals.filter((d) => endsWith(d.name, keyword));
+
+      // For multi-word keywords, find sibling deals by product type
+      const words = keyword.split(/\s+/);
+      if (words.length >= 2) {
+        const directIds = new Set(direct.map((d) => d.id));
+        const others = deals.filter((d) => !directIds.has(d.id));
+
+        for (let i = 1; i < words.length; i++) {
+          const phrase = words.slice(i).join(" ");
+          if (phrase.length < 3) continue;
+          const siblings = others.filter((d) => endsWith(d.name, phrase));
+          if (siblings.length > 0) {
+            return [...direct, ...siblings];
+          }
+        }
+      }
+
+      return direct;
+    },
+    [deals]
+  );
+
+  const handleCheckOff = (item: ShoppingTripItem) => {
     if (editMode) return;
-    // Haptic feedback
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(10);
     }
+    setExpandedItemId(null);
     onToggleItem(item.id);
+  };
+
+  const handleRowTap = (item: ShoppingTripItem) => {
+    if (editMode) return;
+    if (item.has_bogo) {
+      setExpandedItemId((prev) => (prev === item.id ? null : item.id));
+    } else {
+      handleCheckOff(item);
+    }
   };
 
   return (
@@ -213,7 +262,7 @@ export function ShopMode({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onFocus={() => {
-                  if (searchResults.length > 0 || bogoMatches.length > 0)
+                  if (searchResults.length > 0 || dealMatches.length > 0)
                     setShowResults(true);
                 }}
                 placeholder="Add an item..."
@@ -234,25 +283,36 @@ export function ShopMode({
           {/* Search results dropdown */}
           {showResults &&
             inputValue.trim().length >= 2 &&
-            (bogoMatches.length > 0 || !searching) && (
+            (dealMatches.length > 0 || !searching) && (
             <>
               <div
                 className="fixed inset-0 z-10"
                 onClick={() => setShowResults(false)}
               />
               <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl border border-gray-200 shadow-lg z-20 overflow-hidden max-h-[400px] overflow-y-auto">
-                {/* BOGO Deals section */}
-                {bogoMatches.length > 0 && (
+                {/* Generic add option */}
+                <button
+                  onClick={handleSubmit as () => void}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left border-b border-gray-100"
+                >
+                  <Plus size={18} className="text-publix-green" />
+                  <span className="text-base font-semibold text-publix-green">
+                    Add &ldquo;{inputValue.trim()}&rdquo;
+                  </span>
+                </button>
+
+                {/* Current Deals section */}
+                {dealMatches.length > 0 && (
                   <>
-                    <div className="px-4 py-2 bg-green-50 border-b border-green-100">
+                    <div className="px-4 py-2 bg-green-50 border-y border-green-100">
                       <span className="text-xs font-bold text-green-700 uppercase tracking-wide">
-                        BOGO Deals
+                        Current Deals
                       </span>
                     </div>
-                    {bogoMatches.map((deal) => (
+                    {dealMatches.map((deal) => (
                       <button
                         key={deal.id}
-                        onClick={() => handleSelectBogoDeal(deal)}
+                        onClick={() => handleSelectDeal(deal)}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
                       >
                         {deal.imageUrl && (
@@ -263,10 +323,15 @@ export function ShopMode({
                           />
                         )}
                         <span className="text-base text-gray-900 flex-1">
-                          {deal.name.replace(/\s*BOGO\*?\s*$/i, "").trim()}
+                          {cleanDealSuffix(deal.name)}
                         </span>
-                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
-                          BOGO
+                        <span className={cn(
+                          "text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0",
+                          deal.dealType === "bogo" ? "bg-green-100 text-green-700" :
+                          deal.dealType === "sale" ? "bg-amber-100 text-amber-700" :
+                          "bg-purple-100 text-purple-700"
+                        )}>
+                          {DEAL_TYPE_CONFIG[deal.dealType].label}
                         </span>
                         <Plus
                           size={18}
@@ -277,27 +342,28 @@ export function ShopMode({
                   </>
                 )}
 
-                {/* All Products divider */}
-                {bogoMatches.length > 0 &&
-                  filteredSearchResults.length > 0 &&
-                  !searching && (
-                    <div className="px-4 py-2 bg-gray-50 border-y border-gray-100">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                        All Products
-                      </span>
-                    </div>
-                  )}
-
                 {/* Loading indicator for search results */}
-                {searching && bogoMatches.length > 0 && (
+                {searching && (
                   <div className="px-4 py-3 flex items-center justify-center">
                     <div className="w-4 h-4 border-2 border-gray-300 border-t-publix-green rounded-full animate-spin" />
                   </div>
                 )}
 
-                {/* Flipp search results */}
-                {!searching && (
+                {!searching && filteredSearchResults.length === 0 &&
+                  dealMatches.length === 0 && (
+                    <div className="px-4 py-3 text-center text-sm text-gray-500">
+                      No products found
+                    </div>
+                  )}
+
+                {/* All Products */}
+                {!searching && filteredSearchResults.length > 0 && (
                   <>
+                    <div className="px-4 py-2 bg-gray-50 border-y border-gray-100">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        All Products
+                      </span>
+                    </div>
                     {filteredSearchResults.map((result) => (
                       <button
                         key={result.id}
@@ -307,9 +373,14 @@ export function ShopMode({
                         <span className="text-base text-gray-900 flex-1">
                           {result.name}
                         </span>
-                        {result.isBogo && bogoMatches.length === 0 && (
-                          <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0">
-                            BOGO
+                        {result.dealType && dealMatches.length === 0 && (
+                          <span className={cn(
+                            "text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0",
+                            result.dealType === "bogo" ? "bg-green-100 text-green-700" :
+                            result.dealType === "sale" ? "bg-amber-100 text-amber-700" :
+                            "bg-purple-100 text-purple-700"
+                          )}>
+                            {DEAL_TYPE_CONFIG[result.dealType].label}
                           </span>
                         )}
                         <Plus
@@ -318,24 +389,9 @@ export function ShopMode({
                         />
                       </button>
                     ))}
-                    {filteredSearchResults.length === 0 &&
-                      bogoMatches.length === 0 && (
-                        <div className="px-4 py-3 text-center text-sm text-gray-500">
-                          No products found
-                        </div>
-                      )}
                   </>
                 )}
 
-                <button
-                  onClick={handleSubmit as () => void}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors text-left border-t border-gray-100"
-                >
-                  <Plus size={18} className="text-publix-green" />
-                  <span className="text-base font-semibold text-publix-green">
-                    Add &ldquo;{inputValue.trim()}&rdquo;
-                  </span>
-                </button>
               </div>
             </>
           )}
@@ -346,47 +402,114 @@ export function ShopMode({
       <div className="flex-1 px-4 py-3">
         {/* Unchecked items */}
         <div className="space-y-1" role="list" aria-label="Shopping items">
-          {uncheckedItems.map((item) => (
-            <div
-              key={item.id}
-              role="listitem"
-              className="shop-item-enter"
-            >
-              <button
-                onClick={() => handleRowTap(item)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3.5 rounded-2xl active:bg-gray-50 transition-colors",
-                  "min-h-[56px]"
-                )}
-                disabled={editMode}
+          {uncheckedItems.map((item) => {
+            const isExpanded = expandedItemId === item.id;
+            const matchingDeals = isExpanded ? getMatchingDeals(item.name) : [];
+
+            return (
+              <div
+                key={item.id}
+                role="listitem"
+                className="shop-item-enter"
               >
-                {/* Checkbox */}
-                <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center flex-shrink-0" />
-                {/* Item name */}
-                <span className="text-lg font-medium text-gray-900 flex-1 text-left">
-                  {item.name}
-                </span>
-                {/* BOGO pill */}
-                {item.has_bogo && (
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0">
-                    BOGO
-                  </span>
-                )}
-                {/* Remove button in edit mode */}
-                {editMode && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveItem(item.id);
-                    }}
-                    className="text-red-500 text-sm font-semibold px-2 py-1 rounded-lg hover:bg-red-50 flex-shrink-0"
-                  >
-                    Remove
-                  </button>
-                )}
-              </button>
-            </div>
-          ))}
+                <div
+                  className={cn(
+                    "rounded-2xl transition-colors",
+                    isExpanded && "bg-green-50/50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-full flex items-center gap-3 px-3 py-3.5 min-h-[56px]",
+                    editMode && "pointer-events-none"
+                  )}>
+                    {/* Checkbox — tapping checks off */}
+                    <button
+                      onClick={() => handleCheckOff(item)}
+                      className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
+                      aria-label={`Check off ${item.name}`}
+                    />
+                    {/* Item name + deal pill — tapping expands deals */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => !editMode && handleRowTap(item)}
+                      className="flex-1 flex items-center gap-3 cursor-pointer"
+                    >
+                      <span className="text-lg font-medium text-gray-900 flex-1 text-left">
+                        {item.name}
+                      </span>
+                      {item.has_bogo && (
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 flex items-center gap-1">
+                          Deal
+                          <ChevronRight
+                            size={12}
+                            className={cn(
+                              "transition-transform duration-200",
+                              isExpanded && "rotate-90"
+                            )}
+                          />
+                        </span>
+                      )}
+                    </div>
+                    {/* Remove button in edit mode */}
+                    {editMode && (
+                      <button
+                        onClick={() => onRemoveItem(item.id)}
+                        className="text-red-500 text-sm font-semibold px-2 py-1 rounded-lg hover:bg-red-50 flex-shrink-0 pointer-events-auto"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Expanded matching deals */}
+                  {isExpanded && matchingDeals.length > 0 && (
+                    <div className="px-3 pb-3">
+                      <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2 px-1">
+                        {matchingDeals.length} matching deal{matchingDeals.length !== 1 ? "s" : ""}
+                      </p>
+                      <div className="space-y-2">
+                        {matchingDeals.map((deal) => (
+                          <div
+                            key={deal.id}
+                            className="flex items-center gap-3 bg-white rounded-xl p-2.5 border border-green-100"
+                          >
+                            {deal.imageUrl ? (
+                              <img
+                                src={deal.imageUrl}
+                                alt=""
+                                className="w-14 h-14 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                <Tag size={18} className="text-gray-300" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2">
+                                {cleanDealSuffix(deal.name)}
+                              </p>
+                              {deal.saleStory && (
+                                <p className={cn("text-xs mt-0.5 line-clamp-1", DEAL_TYPE_CONFIG[deal.dealType].textColor)}>
+                                  {deal.saleStory}
+                                </p>
+                              )}
+                              <span className={cn(
+                                "text-[10px] font-bold mt-0.5 inline-block",
+                                DEAL_TYPE_CONFIG[deal.dealType].textColor
+                              )}>
+                                {DEAL_TYPE_CONFIG[deal.dealType].label}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Checked items section */}
@@ -417,16 +540,19 @@ export function ShopMode({
                     role="listitem"
                     className="shop-item-exit"
                   >
-                    <button
-                      onClick={() => handleRowTap(item)}
+                    <div
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-3.5 rounded-2xl active:bg-gray-50 transition-colors",
-                        "min-h-[56px] opacity-50"
+                        "w-full flex items-center gap-3 px-3 py-3.5 rounded-2xl transition-colors",
+                        "min-h-[56px] opacity-50",
+                        editMode && "pointer-events-none"
                       )}
-                      disabled={editMode}
                     >
-                      {/* Checked checkbox */}
-                      <div className="w-8 h-8 rounded-full bg-publix-green flex items-center justify-center flex-shrink-0">
+                      {/* Checked checkbox — tapping unchecks */}
+                      <button
+                        onClick={() => handleCheckOff(item)}
+                        className="w-8 h-8 rounded-full bg-publix-green flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
+                        aria-label={`Uncheck ${item.name}`}
+                      >
                         <svg
                           width="16"
                           height="16"
@@ -442,28 +568,25 @@ export function ShopMode({
                             strokeLinejoin="round"
                           />
                         </svg>
-                      </div>
+                      </button>
                       {/* Item name with strikethrough */}
                       <span className="text-lg font-medium text-gray-400 flex-1 text-left shop-strike">
                         {item.name}
                       </span>
                       {item.has_bogo && (
                         <span className="bg-gray-100 text-gray-400 text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0">
-                          BOGO
+                          Deal
                         </span>
                       )}
                       {editMode && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveItem(item.id);
-                          }}
-                          className="text-red-500 text-sm font-semibold px-2 py-1 rounded-lg hover:bg-red-50 flex-shrink-0"
+                          onClick={() => onRemoveItem(item.id)}
+                          className="text-red-500 text-sm font-semibold px-2 py-1 rounded-lg hover:bg-red-50 flex-shrink-0 pointer-events-auto"
                         >
                           Remove
                         </button>
                       )}
-                    </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -479,6 +602,11 @@ export function ShopMode({
             </p>
           </div>
         )}
+
+        {/* Ad at bottom of list */}
+        <div className="mt-6 mb-4">
+          <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
+        </div>
       </div>
     </div>
   );

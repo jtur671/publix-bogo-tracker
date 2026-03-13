@@ -7,11 +7,14 @@ import { useShoppingTrip } from "@/hooks/use-shopping-trips";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useDealsContext } from "@/context/deals-context";
 import { ShoppingCart } from "lucide-react";
+import { AdSlot } from "@/components/ad-slot";
+import { BottomNav } from "@/components/bottom-nav";
+import { cleanDealSuffix } from "@/lib/deal-type";
 
 export default function ShopPage() {
   const router = useRouter();
   const { deals, zipCode } = useDealsContext();
-  const { items: watchlistItems, loading: watchlistLoading } = useWatchlist();
+  const { items: watchlistItems, loading: watchlistLoading, addKeyword, removeKeyword } = useWatchlist();
   const { trip, loaded, startTrip, addItem, toggleItem, removeItem, endTrip } =
     useShoppingTrip(deals);
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
@@ -35,7 +38,7 @@ export default function ShopPage() {
   // Desktop gate
   if (!isMobile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-8" data-testid="desktop-gate">
+      <div className="min-h-screen flex items-center justify-center bg-background p-8 pb-20" data-testid="desktop-gate">
         <div className="text-center max-w-sm">
           <div className="w-20 h-20 mx-auto mb-6 bg-publix-green/10 rounded-3xl flex items-center justify-center">
             <ShoppingCart size={36} className="text-publix-green" />
@@ -56,6 +59,7 @@ export default function ShopPage() {
             </p>
           </div>
         </div>
+        <BottomNav watchlistMatchCount={0} />
       </div>
     );
   }
@@ -85,6 +89,10 @@ export default function ShopPage() {
         >
           Start Shopping
         </button>
+
+        <div className="mt-8 w-full max-w-xs">
+          <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
+        </div>
       </div>
     );
   }
@@ -96,8 +104,21 @@ export default function ShopPage() {
       deals={deals}
       zipCode={zipCode}
       onToggleItem={toggleItem}
-      onAddItem={addItem}
-      onRemoveItem={removeItem}
+      onAddItem={(name: string) => {
+        addItem(name);
+        addKeyword(name);
+      }}
+      onRemoveItem={(id: string) => {
+        // Find the trip item name before removing
+        const tripItem = trip?.items.find((i) => i.id === id);
+        removeItem(id);
+        // Also remove from watchlist if there's a matching keyword
+        if (tripItem) {
+          const name = cleanDealSuffix(tripItem.name).toLowerCase();
+          const match = watchlistItems.find((w) => w.keyword.toLowerCase() === name);
+          if (match) removeKeyword(match.id);
+        }
+      }}
       onDone={() => {
         endTrip();
         router.push("/app");

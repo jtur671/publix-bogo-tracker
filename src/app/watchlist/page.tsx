@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useWatchlist } from "@/hooks/use-watchlist";
 import { useDealsContext } from "@/context/deals-context";
 import { BottomNav } from "@/components/bottom-nav";
+import { AdSlot } from "@/components/ad-slot";
 import { Plus, Trash2, Search } from "lucide-react";
 
 export default function WatchlistPage() {
@@ -74,9 +75,11 @@ export default function WatchlistPage() {
 
         {/* Info */}
         <p className="text-xs text-muted">
-          Keywords match any current or future BOGO deal. You&apos;ll see a
+          Keywords match any current or future deal. You&apos;ll see a
           notification when matches appear.
         </p>
+
+        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
 
         {/* Keyword list */}
         {items.length === 0 ? (

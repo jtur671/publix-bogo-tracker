@@ -9,7 +9,8 @@ import { CategoryFilter } from "@/components/category-filter";
 import { DealGrid } from "@/components/deal-grid";
 import { DealDetailSheet } from "@/components/deal-detail-sheet";
 import { BottomNav } from "@/components/bottom-nav";
-import type { Deal } from "@/types";
+import { AdSlot } from "@/components/ad-slot";
+import type { Deal, DealType } from "@/types";
 
 export default function DealsPage() {
   const { zipCode } = useStoreConfig();
@@ -40,6 +41,14 @@ export default function DealsPage() {
   const watchlistMatchCount = useMemo(() => {
     return deals.filter((d) => isWatched(d)).length;
   }, [deals, isWatched]);
+
+  const dealCounts = useMemo(() => {
+    const counts: Record<DealType, number> = { bogo: 0, sale: 0, coupon: 0 };
+    for (const d of deals) {
+      counts[d.dealType]++;
+    }
+    return counts;
+  }, [deals]);
 
   const validFrom = deals[0]?.validFrom;
   const validTo = deals[0]?.validTo;
@@ -80,7 +89,15 @@ export default function DealsPage() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-lg font-bold tracking-tight">All Deals</h1>
           <p className="text-green-100 text-xs">
-            {deals.length} BOGO deals {dateRange && `· ${dateRange}`}
+            {deals.length} deals{" "}
+            {deals.length > 0 && (
+              <>
+                ({dealCounts.bogo} BOGO
+                {dealCounts.sale > 0 && ` · ${dealCounts.sale} Sale`}
+                {dealCounts.coupon > 0 && ` · ${dealCounts.coupon} Coupon`})
+              </>
+            )}
+            {dateRange && ` · ${dateRange}`}
           </p>
         </div>
       </div>
@@ -98,6 +115,8 @@ export default function DealsPage() {
             {error}
           </div>
         )}
+
+        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
 
         <DealGrid
           deals={filteredDeals}

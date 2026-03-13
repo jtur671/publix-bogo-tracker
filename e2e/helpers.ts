@@ -22,6 +22,7 @@ export interface MockDeal {
   daysLeft: number;
   isExpiringSoon: boolean;
   merchantName: string;
+  dealType: "bogo" | "sale" | "coupon";
 }
 
 export const MOCK_DEALS: MockDeal[] = [
@@ -39,6 +40,7 @@ export const MOCK_DEALS: MockDeal[] = [
     daysLeft: 5,
     isExpiringSoon: false,
     merchantName: "Publix",
+    dealType: "bogo",
   },
   {
     id: 1002,
@@ -54,6 +56,7 @@ export const MOCK_DEALS: MockDeal[] = [
     daysLeft: 5,
     isExpiringSoon: false,
     merchantName: "Publix",
+    dealType: "bogo",
   },
   {
     id: 1003,
@@ -69,6 +72,7 @@ export const MOCK_DEALS: MockDeal[] = [
     daysLeft: 5,
     isExpiringSoon: false,
     merchantName: "Publix",
+    dealType: "bogo",
   },
   {
     id: 1004,
@@ -84,6 +88,7 @@ export const MOCK_DEALS: MockDeal[] = [
     daysLeft: 5,
     isExpiringSoon: false,
     merchantName: "Publix",
+    dealType: "bogo",
   },
   {
     id: 1005,
@@ -99,6 +104,7 @@ export const MOCK_DEALS: MockDeal[] = [
     daysLeft: 5,
     isExpiringSoon: false,
     merchantName: "Publix",
+    dealType: "bogo",
   },
   {
     id: 1006,
@@ -114,6 +120,39 @@ export const MOCK_DEALS: MockDeal[] = [
     daysLeft: 5,
     isExpiringSoon: false,
     merchantName: "Publix",
+    dealType: "bogo",
+  },
+  {
+    id: 1007,
+    name: "Tide Laundry Detergent SALE",
+    description: "Save $3.00",
+    imageUrl: "",
+    price: "$9.99",
+    priceText: "$9.99",
+    saleStory: "$3 OFF",
+    validFrom: "2026-03-10",
+    validTo: "2026-03-17",
+    category: "Household",
+    daysLeft: 5,
+    isExpiringSoon: false,
+    merchantName: "Publix",
+    dealType: "sale",
+  },
+  {
+    id: 1008,
+    name: "Kellogg's Pop-Tarts COUPON",
+    description: "$1 off digital coupon",
+    imageUrl: "",
+    price: "$3.49",
+    priceText: "$3.49",
+    saleStory: "$1 OFF COUPON",
+    validFrom: "2026-03-10",
+    validTo: "2026-03-17",
+    category: "Pantry",
+    daysLeft: 5,
+    isExpiringSoon: false,
+    merchantName: "Publix",
+    dealType: "coupon",
   },
 ];
 

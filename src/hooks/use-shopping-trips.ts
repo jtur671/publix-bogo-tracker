@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { cleanDealSuffix } from "@/lib/deal-type";
 import type { ShoppingTrip, ShoppingTripItem, Deal, WatchlistItem } from "@/types";
 
 const ACTIVE_TRIP_KEY = "bogo-active-trip";
@@ -38,11 +39,9 @@ function saveHistory(trips: ShoppingTrip[]) {
 }
 
 function itemMatchesDeal(name: string, deal: Deal): boolean {
-  const lower = name.toLowerCase();
-  return (
-    deal.name.toLowerCase().includes(lower) ||
-    deal.description.toLowerCase().includes(lower)
-  );
+  const keyword = cleanDealSuffix(name).toLowerCase();
+  const cleanName = cleanDealSuffix(deal.name).toLowerCase();
+  return cleanName === keyword || cleanName.endsWith(` ${keyword}`);
 }
 
 export function useShoppingTrip(deals: Deal[] = []) {

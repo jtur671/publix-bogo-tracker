@@ -18,6 +18,8 @@ export interface FlippItem {
   category_names: string[];
 }
 
+export type DealType = "bogo" | "sale" | "coupon";
+
 export interface Deal {
   id: number;
   name: string;
@@ -32,6 +34,7 @@ export interface Deal {
   daysLeft: number;
   isExpiringSoon: boolean;
   merchantName: string;
+  dealType: DealType;
 }
 
 export interface WatchlistItem {
