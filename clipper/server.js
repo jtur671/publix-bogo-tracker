@@ -22,28 +22,9 @@ const SELECTORS = {
   loadMoreButton: ".button-container button",
 };
 
-const ALLOWED_DOMAINS = [
-  "publix.com",
-  "account.publix.com",
-  "cutpcdnwimages.azureedge.net",
-  "cutpstorb2c.blob.core.windows.net",
-  "b2clogin.com",
-  "publixcdn.com",
-  "d19hn3jcfcdeky.cloudfront.net",
-];
-
 const TIMEOUT_MS = 120_000;
 
 // ── Helpers ─────────────────────────────────────────────────────────
-
-function isDomainAllowed(url) {
-  try {
-    const hostname = new URL(url).hostname;
-    return ALLOWED_DOMAINS.some((d) => hostname.endsWith(d));
-  } catch {
-    return false;
-  }
-}
 
 function randomDelay(min = 500, max = 1500) {
   const ms = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -168,6 +149,15 @@ async function clipAllCoupons(email, password) {
         );
       }
 
+      // Wait for coupon cards to render (JS-rendered after DOM load)
+      try {
+        await page.waitForSelector(SELECTORS.unclippedCoupon, { timeout: 15_000 });
+      } catch {
+        // Coupons may not have loaded — try a full page reload
+        await page.reload({ waitUntil: "load", timeout: 60_000 });
+        await page.waitForSelector(SELECTORS.unclippedCoupon, { timeout: 15_000 }).catch(() => {});
+      }
+
       await randomDelay(1000, 2000);
 
       // Load all coupons by clicking "Load more" repeatedly
@@ -182,8 +172,32 @@ async function clipAllCoupons(email, password) {
         });
         if (!isVisible) break;
 
-        await loadMoreBtn.click();
-        await randomDelay(800, 1500);
+        // Count coupons before clicking
+        const countBefore = await page.$$eval(
+          SELECTORS.unclippedCoupon,
+          (els) => els.length
+        );
+
+        // Scroll into view and click via page.click for reliable mouse simulation
+        await loadMoreBtn.evaluate((el) =>
+          el.scrollIntoView({ behavior: "instant", block: "center" })
+        );
+        await randomDelay(300, 600);
+        await page.click(SELECTORS.loadMoreButton);
+
+        // Wait for new coupons to appear (up to 10s)
+        try {
+          await page.waitForFunction(
+            (sel, prev) => document.querySelectorAll(sel).length > prev,
+            { timeout: 10_000 },
+            SELECTORS.unclippedCoupon,
+            countBefore
+          );
+        } catch {
+          // No new coupons loaded — button may have been the last page
+          break;
+        }
+        await randomDelay(500, 1000);
         loadMoreAttempts++;
       }
 
