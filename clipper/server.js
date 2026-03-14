@@ -13,25 +13,23 @@ const PORT = process.env.PORT || 10000;
 // ── Selectors (verify against live site) ────────────────────────────
 
 const SELECTORS = {
-  signInButton: "a.sign-in-button",
+  loginLink: "#userLogIn",
   emailField: "#signInName",
   passwordField: "#password",
   submitButton: "#next",
-  loginError: ".error.itemLevel",
-  instructionalModal: ".modal.instructional",
-  modalDismiss: "button.cta-link",
-  unclippedCoupon:
-    ".savings-container .card.savings .buttons-area button:not(.clipped)",
-  clippedCoupon:
-    ".savings-container .card.savings .buttons-area button.clipped",
-  loadMoreButton: "div.card-loader button",
+  loginError: ".error.pageLevel, .error.itemLevel",
+  unclippedCoupon: '.p-coupon-button',
+  loadMoreButton: ".button-container button",
 };
 
 const ALLOWED_DOMAINS = [
   "publix.com",
+  "account.publix.com",
   "cutpcdnwimages.azureedge.net",
   "cutpstorb2c.blob.core.windows.net",
   "b2clogin.com",
+  "publixcdn.com",
+  "d19hn3jcfcdeky.cloudfront.net",
 ];
 
 const TIMEOUT_MS = 120_000;
@@ -111,37 +109,13 @@ async function clipAllCoupons(email, password) {
     });
 
     const clipPromise = (async () => {
+      // Navigate directly to login with redirect back to coupons
       await page.goto(
-        "https://www.publix.com/savings/digital-coupons?sort=Newest",
+        "https://www.publix.com/login?redirectUrl=/savings/digital-coupons",
         { waitUntil: "networkidle2", timeout: 30_000 }
       );
 
-      // Dismiss instructional modal if present
-      try {
-        await page.waitForSelector(SELECTORS.instructionalModal, {
-          timeout: 3000,
-        });
-        const dismissBtn = await page.$(SELECTORS.modalDismiss);
-        if (dismissBtn) await dismissBtn.click();
-        await randomDelay();
-      } catch {
-        // No modal
-      }
-
-      // Click sign-in
-      const signInBtn = await page.$(SELECTORS.signInButton);
-      if (!signInBtn) {
-        return {
-          success: false,
-          clipped: 0,
-          total: 0,
-          error:
-            "Could not find sign-in button. Publix may have updated their website.",
-        };
-      }
-      await signInBtn.click();
-
-      // Wait for login form
+      // Wait for login form (hosted on account.publix.com)
       try {
         await page.waitForSelector(SELECTORS.emailField, { timeout: 15_000 });
       } catch {
@@ -163,7 +137,7 @@ async function clipAllCoupons(email, password) {
 
       await page.click(SELECTORS.submitButton);
 
-      // Wait for redirect or login error
+      // Wait for redirect back to publix.com or login error
       try {
         await Promise.race([
           page.waitForNavigation({
@@ -171,15 +145,15 @@ async function clipAllCoupons(email, password) {
             timeout: 20_000,
           }),
           page
-            .waitForSelector(SELECTORS.loginError, { timeout: 10_000 })
+            .waitForSelector(SELECTORS.loginError, { visible: true, timeout: 10_000 })
             .then(async (el) => {
-              const text = await el?.evaluate((e) => e.textContent);
+              const text = await el?.evaluate((e) => e.textContent?.trim());
               throw new Error(text || "Login failed");
             }),
         ]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Login failed";
-        if (msg.includes("Login failed") || msg.includes("password")) {
+        if (msg.includes("Login failed") || msg.includes("password") || msg.includes("incorrect")) {
           return {
             success: false,
             clipped: 0,
@@ -192,14 +166,14 @@ async function clipAllCoupons(email, password) {
       // Ensure we're on the coupons page
       if (!page.url().includes("digital-coupons")) {
         await page.goto(
-          "https://www.publix.com/savings/digital-coupons?sort=Newest",
+          "https://www.publix.com/savings/digital-coupons",
           { waitUntil: "networkidle2", timeout: 30_000 }
         );
       }
 
       await randomDelay(1000, 2000);
 
-      // Load all coupons
+      // Load all coupons by clicking "Load more" repeatedly
       let loadMoreAttempts = 0;
       while (loadMoreAttempts < 50) {
         const loadMoreBtn = await page.$(SELECTORS.loadMoreButton);
@@ -216,12 +190,23 @@ async function clipAllCoupons(email, password) {
         loadMoreAttempts++;
       }
 
-      // Count and clip
-      const unclippedButtons = await page.$$(SELECTORS.unclippedCoupon);
-      const alreadyClipped = await page.$$(SELECTORS.clippedCoupon);
-      const total = unclippedButtons.length + alreadyClipped.length;
+      // Find all coupon buttons and separate clipped from unclipped
+      const allCouponButtons = await page.$$(SELECTORS.unclippedCoupon);
+      const unclipped = [];
+      let alreadyClippedCount = 0;
 
-      if (unclippedButtons.length === 0) {
+      for (const btn of allCouponButtons) {
+        const text = await btn.evaluate((e) => e.textContent?.trim());
+        if (text === "Clip coupon") {
+          unclipped.push(btn);
+        } else {
+          alreadyClippedCount++;
+        }
+      }
+
+      const total = unclipped.length + alreadyClippedCount;
+
+      if (unclipped.length === 0) {
         return {
           success: true,
           clipped: 0,
@@ -230,8 +215,9 @@ async function clipAllCoupons(email, password) {
         };
       }
 
+      // Click each unclipped coupon
       let clipped = 0;
-      for (const btn of unclippedButtons) {
+      for (const btn of unclipped) {
         try {
           await btn.click();
           await randomDelay(500, 1200);
