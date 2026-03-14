@@ -19,10 +19,10 @@ const SELECTORS = {
   submitButton: "#next",
   loginError: ".error.pageLevel, .error.itemLevel",
   unclippedCoupon: '.p-coupon-button',
-  loadMoreButton: ".button-container button",
+  loadMoreButton: "button.p-button.button--secondary",
 };
 
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = 300_000;
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -47,8 +47,9 @@ function authenticate(req, res, next) {
 // ── Clip logic ──────────────────────────────────────────────────────
 
 async function clipAllCoupons(email, password) {
+  const isDebug = process.env.DEBUG === "1";
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: !isDebug,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -115,39 +116,43 @@ async function clipAllCoupons(email, password) {
 
       await page.click(SELECTORS.submitButton);
 
-      // Wait for redirect back to publix.com or login error
-      try {
-        await Promise.race([
-          page.waitForNavigation({
-            waitUntil: "domcontentloaded",
-            timeout: 60_000,
-          }),
-          page
-            .waitForSelector(SELECTORS.loginError, { visible: true, timeout: 10_000 })
-            .then(async (el) => {
-              const text = await el?.evaluate((e) => e.textContent?.trim());
-              throw new Error(text || "Login failed");
-            }),
-        ]);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Login failed";
-        if (msg.includes("Login failed") || msg.includes("password") || msg.includes("incorrect")) {
-          return {
-            success: false,
-            clipped: 0,
-            total: 0,
-            error: `Login failed: ${msg}`,
-          };
+      // Poll until we leave account.publix.com or see a login error
+      const loginDeadline = Date.now() + 20_000;
+      while (Date.now() < loginDeadline) {
+        await new Promise((r) => setTimeout(r, 2000));
+
+        // Check for visible login error on the page
+        const errorEl = await page.$(SELECTORS.loginError).catch(() => null);
+        if (errorEl) {
+          const errorInfo = await errorEl.evaluate((e) => {
+            const style = window.getComputedStyle(e);
+            return {
+              text: e.textContent?.trim(),
+              visible: style.display !== "none" && style.visibility !== "hidden" && e.offsetHeight > 0,
+              html: e.innerHTML.substring(0, 200),
+            };
+          });
+          if (errorInfo.visible && errorInfo.text) {
+            return {
+              success: false,
+              clipped: 0,
+              total: 0,
+              error: `Login failed: ${errorInfo.text}`,
+            };
+          }
+        }
+
+        // Check if we've left the login page
+        if (!page.url().includes("account.publix.com")) {
+          break;
         }
       }
 
-      // Ensure we're on the coupons page
-      if (!page.url().includes("digital-coupons")) {
-        await page.goto(
-          "https://www.publix.com/savings/digital-coupons",
-          { waitUntil: "domcontentloaded", timeout: 60_000 }
-        );
-      }
+      // Navigate to coupons page
+      await page.goto(
+        "https://www.publix.com/savings/digital-coupons",
+        { waitUntil: "domcontentloaded", timeout: 60_000 }
+      );
 
       // Wait for coupon cards to render (JS-rendered after DOM load)
       try {
@@ -163,8 +168,17 @@ async function clipAllCoupons(email, password) {
       // Load all coupons by clicking "Load more" repeatedly
       let loadMoreAttempts = 0;
       while (loadMoreAttempts < 50) {
-        const loadMoreBtn = await page.$(SELECTORS.loadMoreButton);
-        if (!loadMoreBtn) break;
+        // Find load-more button by selector or by text content
+        let loadMoreBtn = await page.$(SELECTORS.loadMoreButton);
+        if (!loadMoreBtn) {
+          // Fall back to searching by text content
+          loadMoreBtn = await page.evaluateHandle(() => {
+            const els = Array.from(document.querySelectorAll('button, a'));
+            return els.find(el => /load\s*more|show\s*more/i.test(el.textContent || '')) || null;
+          });
+          const isNull = await loadMoreBtn.evaluate(el => el === null);
+          if (isNull) break;
+        }
 
         const isVisible = await loadMoreBtn.evaluate((el) => {
           const style = window.getComputedStyle(el);
@@ -177,13 +191,12 @@ async function clipAllCoupons(email, password) {
           SELECTORS.unclippedCoupon,
           (els) => els.length
         );
-
-        // Scroll into view and click via page.click for reliable mouse simulation
+        // Scroll into view and click
         await loadMoreBtn.evaluate((el) =>
           el.scrollIntoView({ behavior: "instant", block: "center" })
         );
         await randomDelay(300, 600);
-        await page.click(SELECTORS.loadMoreButton);
+        await loadMoreBtn.click();
 
         // Wait for new coupons to appear (up to 10s)
         try {
@@ -194,7 +207,6 @@ async function clipAllCoupons(email, password) {
             countBefore
           );
         } catch {
-          // No new coupons loaded — button may have been the last page
           break;
         }
         await randomDelay(500, 1000);
