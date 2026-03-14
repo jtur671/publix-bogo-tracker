@@ -109,12 +109,12 @@ async function clipAllCoupons(email, password) {
       // Navigate directly to login with redirect back to coupons
       await page.goto(
         "https://www.publix.com/login?redirectUrl=/savings/digital-coupons",
-        { waitUntil: "networkidle2", timeout: 30_000 }
+        { waitUntil: "domcontentloaded", timeout: 60_000 }
       );
 
       // Wait for login form (hosted on account.publix.com)
       try {
-        await page.waitForSelector(SELECTORS.emailField, { timeout: 15_000 });
+        await page.waitForSelector(SELECTORS.emailField, { timeout: 30_000 });
       } catch {
         return {
           success: false,
@@ -138,8 +138,8 @@ async function clipAllCoupons(email, password) {
       try {
         await Promise.race([
           page.waitForNavigation({
-            waitUntil: "networkidle2",
-            timeout: 20_000,
+            waitUntil: "domcontentloaded",
+            timeout: 60_000,
           }),
           page
             .waitForSelector(SELECTORS.loginError, { visible: true, timeout: 10_000 })
@@ -164,7 +164,7 @@ async function clipAllCoupons(email, password) {
       if (!page.url().includes("digital-coupons")) {
         await page.goto(
           "https://www.publix.com/savings/digital-coupons",
-          { waitUntil: "networkidle2", timeout: 30_000 }
+          { waitUntil: "domcontentloaded", timeout: 60_000 }
         );
       }
 
