@@ -87,17 +87,14 @@ async function clipAllCoupons(email, password) {
     );
     await page.setViewport({ width: 1280, height: 800 });
 
+    // Block only heavy resources to speed up navigation
     await page.setRequestInterception(true);
     page.on("request", (req) => {
       const type = req.resourceType();
       if (type === "image" || type === "media" || type === "font") {
         req.abort();
-        return;
-      }
-      if (isDomainAllowed(req.url())) {
-        req.continue();
       } else {
-        req.abort();
+        req.continue();
       }
     });
 
