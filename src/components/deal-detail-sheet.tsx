@@ -282,6 +282,9 @@ export function DealDetailSheet({
                 <ExternalLink size={18} />
                 Open Publix Digital Coupons
               </a>
+              <p className="text-xs text-muted text-center">
+                Tip: Use Clip All Coupons in Settings to clip everything at once
+              </p>
             </div>
           )}
 

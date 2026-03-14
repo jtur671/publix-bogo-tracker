@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: publix-clipper
+    runtime: docker
+    dockerfilePath: ./clipper/Dockerfile
+    dockerContext: ./clipper
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: CLIPPER_API_KEY
+        generateValue: true
