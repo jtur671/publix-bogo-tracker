@@ -19,7 +19,7 @@ import { ShoppingBag, Sparkles, Tag } from "lucide-react";
 import Link from "next/link";
 import { AdSlot } from "@/components/ad-slot";
 import { cleanDealSuffix } from "@/lib/deal-type";
-import type { Deal } from "@/types";
+import type { Deal, DealType } from "@/types";
 import { useState } from "react";
 
 export default function HomePage() {
@@ -68,6 +68,12 @@ export default function HomePage() {
     return getTopAffinityCategories(watchlist, deals, 3);
   }, [watchlist, deals]);
 
+  const dealCounts = useMemo(() => {
+    const counts: Record<DealType, number> = { bogo: 0, sale: 0, coupon: 0 };
+    for (const d of deals) counts[d.dealType]++;
+    return counts;
+  }, [deals]);
+
   const validFrom = deals[0]?.validFrom;
   const validTo = deals[0]?.validTo;
 
@@ -99,6 +105,7 @@ export default function HomePage() {
         validTo={validTo}
         onChangeZip={() => setShowZipModal(true)}
         userName={user?.email?.split("@")[0]}
+        dealCounts={dealCounts}
       />
 
       <main className="max-w-4xl mx-auto px-3 py-4 space-y-6">
@@ -181,15 +188,16 @@ export default function HomePage() {
 
             <div className="mt-3">
               {recommendations.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-3 px-3">
                   {recommendations.map((deal) => (
-                    <DealCard
-                      key={deal.id}
-                      deal={deal}
-                      isWatched={false}
-                      onToggleWatch={() => handleToggleWatch(deal)}
-                      onTap={() => setSelectedDeal(deal)}
-                    />
+                    <div key={deal.id} className="flex-shrink-0 w-[160px] sm:w-[180px]">
+                      <DealCard
+                        deal={deal}
+                        isWatched={false}
+                        onToggleWatch={() => handleToggleWatch(deal)}
+                        onTap={() => setSelectedDeal(deal)}
+                      />
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -239,7 +247,10 @@ export default function HomePage() {
         )}
       </main>
 
-      <BottomNav watchlistMatchCount={watchlistDeals.length} />
+      <BottomNav
+        watchlistMatchCount={watchlistDeals.length}
+        hasNewDeals={validFrom ? (Date.now() - new Date(validFrom).getTime()) < 86400000 : false}
+      />
 
       <ZipCodeModal
         open={needsSetup || showZipModal}

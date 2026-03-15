@@ -154,7 +154,7 @@ export function DealDetailSheet({
 
         <div className="px-5 pb-8">
           {/* Product image */}
-          <div className="relative w-full aspect-square max-w-[280px] mx-auto mb-5 bg-gray-50 rounded-2xl overflow-hidden">
+          <div className="relative w-full aspect-[4/3] max-w-[280px] mx-auto mb-5 bg-gray-50 rounded-2xl overflow-hidden">
             {deal.imageUrl ? (
               <Image
                 src={deal.imageUrl}

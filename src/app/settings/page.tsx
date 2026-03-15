@@ -8,7 +8,7 @@ import { useDealsContext } from "@/context/deals-context";
 import { BottomNav } from "@/components/bottom-nav";
 import { ZipCodeModal } from "@/components/zip-code-modal";
 import { InstallPrompt } from "@/components/install-prompt";
-import { MapPin, Trash2, Info, LogOut, User } from "lucide-react";
+import { MapPin, Trash2, Info, LogOut, User, Calendar } from "lucide-react";
 
 export default function SettingsPage() {
   const { zipCode, updateZip } = useStoreConfig();
@@ -39,37 +39,40 @@ export default function SettingsPage() {
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         <InstallPrompt />
 
-        {/* Zip code */}
-        <button
-          onClick={() => setShowZipModal(true)}
-          className="w-full bg-white rounded-xl border border-border p-4 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors"
-        >
-          <MapPin size={20} className="text-publix-green" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Store Location</p>
-            <p className="text-xs text-muted">Zip code: {zipCode}</p>
-          </div>
-          <span className="text-xs text-publix-green font-medium">Change</span>
-        </button>
+        {/* Preferences */}
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <button
+            onClick={() => setShowZipModal(true)}
+            className="w-full p-4 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors"
+          >
+            <MapPin size={20} className="text-publix-green" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Store Location</p>
+              <p className="text-xs text-muted">Zip code: {zipCode}</p>
+            </div>
+            <span className="text-xs text-publix-green font-medium">Change</span>
+          </button>
 
-        {/* Clear data */}
-        <button
-          onClick={handleClearData}
-          className="w-full bg-white rounded-xl border border-border p-4 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors"
-        >
-          <Trash2 size={20} className="text-danger" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Clear All Data</p>
-            <p className="text-xs text-muted">
-              Remove watchlist, zip code, and preferences
-            </p>
-          </div>
-          {cleared && (
-            <span className="text-xs text-publix-green font-medium">
-              Cleared!
-            </span>
-          )}
-        </button>
+          <div className="border-t border-border mx-4" />
+
+          <button
+            onClick={handleClearData}
+            className="w-full p-4 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors"
+          >
+            <Trash2 size={20} className="text-danger" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Clear All Data</p>
+              <p className="text-xs text-muted">
+                Remove watchlist, zip code, and preferences
+              </p>
+            </div>
+            {cleared && (
+              <span className="text-xs text-publix-green font-medium">
+                Cleared!
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* App info */}
         <div className="bg-white rounded-xl border border-border p-4">
@@ -82,10 +85,18 @@ export default function SettingsPage() {
             <p>
               Deal data from Flipp. Not affiliated with Publix Super Markets.
             </p>
-            <p>
-              {watchlist.length} watchlist keyword
-              {watchlist.length !== 1 ? "s" : ""} · {zipCode} zip
-            </p>
+            <div className="flex items-center gap-3 pt-1">
+              <span className="flex items-center gap-1">
+                <Calendar size={11} />
+                {deals.length > 0 ? `${deals.length} deals this week` : "No deals loaded"}
+              </span>
+              <span>·</span>
+              <span>
+                {watchlist.length} keyword{watchlist.length !== 1 ? "s" : ""}
+              </span>
+              <span>·</span>
+              <span>{zipCode} zip</span>
+            </div>
           </div>
         </div>
 

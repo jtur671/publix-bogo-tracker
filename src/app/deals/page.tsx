@@ -116,8 +116,6 @@ export default function DealsPage() {
           </div>
         )}
 
-        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
-
         <DealGrid
           deals={filteredDeals}
           loading={loading}
@@ -125,6 +123,8 @@ export default function DealsPage() {
           onToggleWatch={handleToggleWatch}
           onTapDeal={setSelectedDeal}
         />
+
+        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
       </div>
 
       <BottomNav watchlistMatchCount={watchlistMatchCount} />

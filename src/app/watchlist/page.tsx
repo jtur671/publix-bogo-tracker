@@ -6,6 +6,9 @@ import { useDealsContext } from "@/context/deals-context";
 import { BottomNav } from "@/components/bottom-nav";
 import { AdSlot } from "@/components/ad-slot";
 import { Plus, Trash2, Search } from "lucide-react";
+import { DEAL_TYPE_CONFIG, cleanDealSuffix } from "@/lib/deal-type";
+import { cn } from "@/lib/utils";
+import type { Deal } from "@/types";
 
 export default function WatchlistPage() {
   const { deals } = useDealsContext();
@@ -17,15 +20,15 @@ export default function WatchlistPage() {
   }, [deals, isWatched]);
 
   const keywordMatches = useMemo(() => {
-    const matches = new Map<string, number>();
+    const matches = new Map<string, { count: number; firstDeal: Deal | null }>();
     for (const item of items) {
       const kw = item.keyword.toLowerCase();
-      const count = deals.filter(
+      const matched = deals.filter(
         (d) =>
           d.name.toLowerCase().includes(kw) ||
           d.description.toLowerCase().includes(kw)
-      ).length;
-      matches.set(item.id, count);
+      );
+      matches.set(item.id, { count: matched.length, firstDeal: matched[0] || null });
     }
     return matches;
   }, [items, deals]);
@@ -92,41 +95,58 @@ export default function WatchlistPage() {
         ) : (
           <div className="space-y-2">
             {items.map((item) => {
-              const matchCount = keywordMatches.get(item.id) || 0;
-              const onSale = matchCount > 0;
+              const match = keywordMatches.get(item.id) || { count: 0, firstDeal: null };
+              const onSale = match.count > 0;
+              const deal = match.firstDeal;
 
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-xl border border-border p-3 flex items-center justify-between"
+                  className="bg-white rounded-xl border border-border p-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium truncate">
-                          {item.keyword}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate">
+                        {item.keyword}
+                      </span>
+                      {onSale && (
+                        <span className="bg-publix-green text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">
+                          {match.count}
                         </span>
-                        {onSale && (
-                          <span className="bg-publix-green text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0">
-                            ON SALE ({matchCount})
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted">
-                        Added{" "}
-                        {new Date(item.added_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
+                      )}
                     </div>
+                    <button
+                      onClick={() => removeKeyword(item.id)}
+                      className="text-muted hover:text-danger p-2 -mr-2"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeKeyword(item.id)}
-                    className="text-muted hover:text-danger p-2 -mr-2"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+
+                  {deal && (
+                    <div className="mt-2 flex items-center gap-2 bg-cream/70 rounded-lg px-2.5 py-1.5">
+                      <span className={cn(
+                        "text-[9px] font-bold uppercase px-1.5 py-0.5 rounded text-white flex-shrink-0",
+                        DEAL_TYPE_CONFIG[deal.dealType].bg
+                      )}>
+                        {DEAL_TYPE_CONFIG[deal.dealType].label}
+                      </span>
+                      <span className="text-xs text-foreground/70 truncate">
+                        {cleanDealSuffix(deal.name)}
+                      </span>
+                      {deal.saleStory && (
+                        <span className={cn("text-[10px] font-bold flex-shrink-0", DEAL_TYPE_CONFIG[deal.dealType].textColor)}>
+                          {deal.saleStory}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {!onSale && (
+                    <p className="text-[10px] text-muted mt-1">
+                      No deals this week
+                    </p>
+                  )}
                 </div>
               );
             })}

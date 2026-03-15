@@ -11,6 +11,7 @@ interface DashboardHeaderProps {
   validTo?: string;
   onChangeZip: () => void;
   userName?: string;
+  dealCounts?: { bogo: number; sale: number; coupon: number };
 }
 
 function formatDate(dateStr: string): string {
@@ -29,6 +30,7 @@ export function DashboardHeader({
   validTo,
   onChangeZip,
   userName,
+  dealCounts,
 }: DashboardHeaderProps) {
   const dateRange =
     validFrom && validTo
@@ -50,6 +52,13 @@ export function DashboardHeader({
             </h1>
             <p className="text-white/60 text-xs font-medium mt-0.5">
               {dealCount} deals
+              {dealCounts && dealCount > 0 && (
+                <span className="text-white/40">
+                  {" "}({dealCounts.bogo} BOGO
+                  {dealCounts.sale > 0 && ` · ${dealCounts.sale} Sale`}
+                  {dealCounts.coupon > 0 && ` · ${dealCounts.coupon} Coupon`})
+                </span>
+              )}
               {dateRange && <span className="text-white/40"> &middot; </span>}
               {dateRange && <span>{dateRange}</span>}
             </p>

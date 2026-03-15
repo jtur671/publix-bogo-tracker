@@ -13,7 +13,7 @@ const tabs = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function BottomNav({ watchlistMatchCount }: { watchlistMatchCount?: number }) {
+export function BottomNav({ watchlistMatchCount, hasNewDeals }: { watchlistMatchCount?: number; hasNewDeals?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -23,6 +23,7 @@ export function BottomNav({ watchlistMatchCount }: { watchlistMatchCount?: numbe
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
           const showBadge = tab.href === "/app" && (watchlistMatchCount ?? 0) > 0;
+          const showDot = tab.href === "/deals" && hasNewDeals;
 
           return (
             <Link
@@ -39,6 +40,9 @@ export function BottomNav({ watchlistMatchCount }: { watchlistMatchCount?: numbe
                   <span className="absolute -top-1.5 -right-2.5 bg-danger text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {watchlistMatchCount}
                   </span>
+                )}
+                {showDot && (
+                  <span className="absolute -top-0.5 -right-1 bg-publix-green rounded-full w-2 h-2" />
                 )}
               </div>
               <span className={cn("text-[10px]", isActive && "font-semibold")}>
