@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import { X, ShoppingBag, Heart, HeartOff, Clock, Tag, ExternalLink, Copy, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, daysLeft as freshDaysLeft } from "@/lib/utils";
 import { DEAL_TYPE_CONFIG, cleanDealSuffix } from "@/lib/deal-type";
 import type { Deal } from "@/types";
 
@@ -107,6 +107,8 @@ export function DealDetailSheet({
   if (!deal) return null;
 
   const cleanName = cleanDealSuffix(deal.name);
+  const days = freshDaysLeft(deal.validTo);
+  const expiringSoon = days <= 2;
 
   return (
     <div
@@ -182,10 +184,10 @@ export function DealDetailSheet({
             </div>
 
             {/* Expiring soon badge */}
-            {deal.isExpiringSoon && (
+            {expiringSoon && (
               <div className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
                 <Clock size={10} />
-                {deal.daysLeft === 0 ? "Last day!" : `${deal.daysLeft}d left`}
+                {days === 0 ? "Last day!" : `${days}d left`}
               </div>
             )}
           </div>
@@ -196,7 +198,7 @@ export function DealDetailSheet({
               <Tag size={11} />
               {deal.category}
             </span>
-            {deal.isExpiringSoon && !deal.isExpiringSoon && null}
+            {expiringSoon && !expiringSoon && null}
           </div>
 
           {/* Deal name */}
@@ -241,14 +243,14 @@ export function DealDetailSheet({
                 <p
                   className={cn(
                     "font-bold",
-                    deal.isExpiringSoon
+                    expiringSoon
                       ? "text-amber-600"
                       : "text-publix-green"
                   )}
                 >
-                  {deal.daysLeft === 0
+                  {days === 0
                     ? "Last day!"
-                    : `${deal.daysLeft} day${deal.daysLeft !== 1 ? "s" : ""}`}
+                    : `${days} day${days !== 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>

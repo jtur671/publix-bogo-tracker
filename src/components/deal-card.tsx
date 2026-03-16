@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Heart, Clock, ShoppingBag } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, daysLeft as freshDaysLeft } from "@/lib/utils";
 import { DEAL_TYPE_CONFIG, cleanDealSuffix } from "@/lib/deal-type";
 import type { Deal } from "@/types";
 
@@ -14,6 +14,9 @@ interface DealCardProps {
 }
 
 export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProps) {
+  const days = freshDaysLeft(deal.validTo);
+  const expiringSoon = days <= 2;
+
   return (
     <div
       className="bg-paper rounded-2xl border border-border overflow-hidden shadow-warm card-lift cursor-pointer"
@@ -72,10 +75,10 @@ export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProp
         </button>
 
         {/* Expiring soon badge */}
-        {deal.isExpiringSoon && (
+        {expiringSoon && (
           <div className="absolute bottom-2.5 left-2.5 bg-warning text-white text-[9px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-warm">
             <Clock size={10} />
-            {deal.daysLeft === 0 ? "Last day!" : `${deal.daysLeft}d left`}
+            {days === 0 ? "Last day!" : `${days}d left`}
           </div>
         )}
       </div>
@@ -97,9 +100,9 @@ export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProp
           <span className="text-[10px] font-semibold text-muted/70 bg-cream px-2 py-0.5 rounded-lg">
             {deal.category}
           </span>
-          {!deal.isExpiringSoon && deal.daysLeft > 0 && (
+          {!expiringSoon && days > 0 && (
             <span className="text-[10px] text-muted/50 font-medium">
-              {deal.daysLeft}d left
+              {days}d left
             </span>
           )}
         </div>
