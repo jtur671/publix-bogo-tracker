@@ -12,10 +12,8 @@ import {
   Star,
   CheckCircle2,
   Zap,
-  Heart,
   ArrowRight,
   ListChecks,
-  Eye,
 } from "lucide-react";
 import { AdSlot } from "@/components/ad-slot";
 
@@ -239,23 +237,21 @@ export default function LandingPage() {
           </div>
 
           {/* Main headline — the hook.
-              "Stop leaving money" is a pattern interrupt. Nobody thinks
-              of their grocery trip as "leaving money on the shelf." */}
+              Lead with the shopping list, not the deals. */}
           <h1
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight"
             style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
           >
-            Stop leaving{" "}
-            <span className="text-publix-green">free groceries</span>{" "}
-            on the shelf
+            The smartest{" "}
+            <span className="text-publix-green">shopping list</span>{" "}
+            for Publix
           </h1>
 
-          {/* Subheadline — specificity sells.
-              "Every week" creates urgency without a fake timer. */}
+          {/* Subheadline — list-first, deals enhance it. */}
           <p className="mt-6 text-lg sm:text-xl text-white/60 max-w-lg mx-auto leading-relaxed">
-            Publix runs 100+ deals every week — BOGOs, sales, and coupons.
-            This app matches them to your shopping list automatically — so
-            you never miss a deal you actually want.
+            Add your groceries. We automatically show you which ones are
+            on BOGO, sale, or coupon this week — so you save money without
+            even trying.
           </p>
 
           {/* Primary CTA — big, green, impossible to miss */}
@@ -264,14 +260,14 @@ export default function LandingPage() {
               href="/app"
               className="group relative inline-flex items-center gap-2.5 bg-publix-green hover:bg-publix-green-dark text-white text-lg font-bold px-8 py-4 rounded-2xl transition-all active:scale-[0.97] shadow-[0_0_40px_-8px_rgba(59,125,35,0.5)]"
             >
-              Start saving now
+              Start your list
               <ArrowRight
                 size={20}
                 className="group-hover:translate-x-1 transition-transform"
               />
             </Link>
             <span className="text-sm text-white/40">
-              Free forever. Sign up in seconds.
+              Free forever. No account required.
             </span>
           </div>
 
@@ -350,10 +346,10 @@ export default function LandingPage() {
               className="mt-3 text-3xl sm:text-4xl font-extrabold"
               style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
             >
-              Three steps to smarter shopping
+              Your list does the deal-hunting for you
             </h2>
             <p className="mt-4 text-white/50 text-lg max-w-md mx-auto">
-              Set it up once. Save money every single week.
+              Add items once. Save money every single week.
             </p>
           </AnimateIn>
 
@@ -361,12 +357,12 @@ export default function LandingPage() {
             {/* Step 1 */}
             <StepRow
               stepNumber="01"
-              title="Build your shopping list"
-              description="Add the items you buy regularly — chicken, pasta, yogurt, whatever your family eats. The app remembers your list between trips."
+              title="Add your grocery items"
+              description="Type in the things you buy regularly — chicken, pasta, yogurt, whatever your family eats. Your list stays saved between trips."
               features={[
-                "Type to search and add items",
-                "Items persist across sessions",
-                "Organize by category automatically",
+                "Search to add items quickly",
+                "List persists across sessions",
+                "Works like a regular shopping list",
               ]}
               mockupContent={<MockupShoppingList />}
               reverse={false}
@@ -375,12 +371,12 @@ export default function LandingPage() {
             {/* Step 2 */}
             <StepRow
               stepNumber="02"
-              title="Get matched to deals"
-              description="Every week, the app checks your list against all active Publix deals — BOGOs, sales, and coupons. When there's a match, you'll see it instantly."
+              title="See which items are on deal"
+              description="Every week, we check your list against 100+ active Publix deals — BOGOs, sales, and coupons. Matching items get tagged automatically."
               features={[
-                "Automatic deal matching",
+                "Automatic deal matching on your list",
                 "See deal images and expiration dates",
-                "Browse 100+ deals you might have missed",
+                "Browse deals you might want to add",
               ]}
               mockupContent={<MockupDealMatch />}
               reverse={true}
@@ -389,12 +385,12 @@ export default function LandingPage() {
             {/* Step 3 */}
             <StepRow
               stepNumber="03"
-              title="Shop like a pro"
-              description="Hit the store with Shop Mode active. Check off items as you go. One hand, one screen, zero stress."
+              title="Shop and check off"
+              description="Open the app at the store. Your list is right there — check items off as you go. One hand, one screen, zero stress."
               features={[
-                "One-handed Shop Mode for in-store use",
-                "Check items off as you shop",
-                "See your savings add up in real time",
+                "Built-in checklist for in-store use",
+                "Deal badges on matching items",
+                "Tap Done when you're finished",
               ]}
               mockupContent={<MockupShopMode />}
               reverse={false}
@@ -433,29 +429,29 @@ export default function LandingPage() {
           >
             {[
               {
-                icon: Tag,
-                title: "Live deal tracking",
-                desc: "Every active Publix deal — BOGOs, sales, and coupons — updated weekly. Filterable by category.",
+                icon: ListChecks,
+                title: "Persistent shopping list",
+                desc: "Your list lives between trips. Add items once — they're always there when you need them.",
               },
               {
-                icon: Heart,
-                title: "Smart watchlist",
-                desc: "Add items once and get matched to deals automatically, week after week.",
+                icon: Tag,
+                title: "Automatic deal matching",
+                desc: "Every week, your items get checked against 100+ active Publix BOGOs, sales, and coupons.",
               },
               {
                 icon: ShoppingCart,
-                title: "Shop Mode",
-                desc: "Purpose-built for one-handed use in the store. Check items off as you go.",
+                title: "Built-in checklist",
+                desc: "Open the app at the store and check items off as you go. One hand, one screen.",
+              },
+              {
+                icon: Clock,
+                title: "Trip history",
+                desc: "See past shopping trips, what you bought, and which deals you scored.",
               },
               {
                 icon: Smartphone,
                 title: "Install as an app",
                 desc: "Add to your home screen for instant access. Works offline after first load.",
-              },
-              {
-                icon: Eye,
-                title: "Deal images & details",
-                desc: "See product photos, prices, and expiration dates before you head to the store.",
               },
               {
                 icon: Zap,
@@ -579,13 +575,13 @@ export default function LandingPage() {
             Your next Publix trip could save you $30+
           </h2>
           <p className="relative mt-4 text-white/70 text-base max-w-md mx-auto">
-            Set up your list in 30 seconds. The deals are already waiting.
+            Start your list in 30 seconds. The deals match themselves.
           </p>
           <Link
             href="/app"
             className="relative inline-flex items-center gap-2 mt-8 bg-white text-publix-green-dark font-bold text-base px-8 py-4 rounded-2xl hover:bg-white/90 active:scale-[0.97] transition-all shadow-lg"
           >
-            Open the app
+            Start your list
             <ArrowRight size={18} />
           </Link>
         </div>
@@ -617,7 +613,7 @@ export default function LandingPage() {
             />
             <FAQItem
               question="Do I need to create an account?"
-              answer="Yes, you&#39;ll need to create a free account to use the app. This lets us save your shopping list and preferences so everything is ready when you come back."
+              answer="Nope. Your shopping list is saved on your device automatically. You can optionally create a free account to sync across devices."
             />
             <FAQItem
               question="How often are deals updated?"
@@ -654,21 +650,21 @@ export default function LandingPage() {
             <span className="text-publix-green">don&#39;t save</span>
           </h2>
           <p className="mt-6 text-lg text-white/50 max-w-md mx-auto">
-            Set up your list. Match your deals. Shop smarter.
+            Add your items. See your deals. Shop smarter.
             It takes 30 seconds.
           </p>
           <Link
             href="/app"
             className="group inline-flex items-center gap-2.5 mt-10 bg-publix-green hover:bg-publix-green-dark text-white text-lg font-bold px-10 py-5 rounded-2xl transition-all active:scale-[0.97] shadow-[0_0_60px_-12px_rgba(59,125,35,0.6)]"
           >
-            Start saving now
+            Start your list
             <ArrowRight
               size={20}
               className="group-hover:translate-x-1 transition-transform"
             />
           </Link>
           <p className="mt-4 text-sm text-white/30">
-            Free. Works on any device. Sign up in seconds.
+            Free. Works on any device. No account required.
           </p>
         </div>
       </section>
@@ -715,7 +711,7 @@ export default function LandingPage() {
                 Ready to save on your next Publix trip?
               </p>
               <p className="text-xs text-white/40">
-                Free. Sign up in seconds.
+                Free. Start your list in seconds.
               </p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -723,7 +719,7 @@ export default function LandingPage() {
                 href="/app"
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-publix-green hover:bg-publix-green-dark text-white text-sm font-bold px-6 py-3 rounded-xl transition-all active:scale-[0.97]"
               >
-                Open the app
+                Start your list
                 <ArrowRight size={16} />
               </Link>
             </div>

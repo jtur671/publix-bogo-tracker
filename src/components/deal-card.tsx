@@ -15,7 +15,8 @@ interface DealCardProps {
 
 export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProps) {
   const days = freshDaysLeft(deal.validTo);
-  const expiringSoon = days <= 2;
+  const expired = days < 0;
+  const expiringSoon = !expired && days <= 2;
 
   return (
     <div
@@ -74,7 +75,13 @@ export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProp
           />
         </button>
 
-        {/* Expiring soon badge */}
+        {/* Expired / Expiring soon badge */}
+        {expired && (
+          <div className="absolute bottom-2.5 left-2.5 bg-gray-400 text-white text-[9px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-warm">
+            <Clock size={10} />
+            Expired
+          </div>
+        )}
         {expiringSoon && (
           <div className="absolute bottom-2.5 left-2.5 bg-warning text-white text-[9px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow-warm">
             <Clock size={10} />
@@ -100,7 +107,7 @@ export function DealCard({ deal, isWatched, onToggleWatch, onTap }: DealCardProp
           <span className="text-[10px] font-semibold text-muted/70 bg-cream px-2 py-0.5 rounded-lg">
             {deal.category}
           </span>
-          {!expiringSoon && days > 0 && (
+          {!expired && !expiringSoon && days > 0 && (
             <span className="text-[10px] text-muted/50 font-medium">
               {days}d left
             </span>

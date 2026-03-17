@@ -108,7 +108,8 @@ export function DealDetailSheet({
 
   const cleanName = cleanDealSuffix(deal.name);
   const days = freshDaysLeft(deal.validTo);
-  const expiringSoon = days <= 2;
+  const expired = days < 0;
+  const expiringSoon = !expired && days <= 2;
 
   return (
     <div
@@ -183,7 +184,13 @@ export function DealDetailSheet({
               {DEAL_TYPE_CONFIG[deal.dealType].label}
             </div>
 
-            {/* Expiring soon badge */}
+            {/* Expired / Expiring soon badge */}
+            {expired && (
+              <div className="absolute top-3 right-3 bg-gray-400 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
+                <Clock size={10} />
+                Expired
+              </div>
+            )}
             {expiringSoon && (
               <div className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
                 <Clock size={10} />
@@ -243,14 +250,18 @@ export function DealDetailSheet({
                 <p
                   className={cn(
                     "font-bold",
-                    expiringSoon
-                      ? "text-amber-600"
-                      : "text-publix-green"
+                    expired
+                      ? "text-gray-400"
+                      : expiringSoon
+                        ? "text-amber-600"
+                        : "text-publix-green"
                   )}
                 >
-                  {days === 0
-                    ? "Last day!"
-                    : `${days} day${days !== 1 ? "s" : ""}`}
+                  {expired
+                    ? "Expired"
+                    : days === 0
+                      ? "Last day!"
+                      : `${days} day${days !== 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>

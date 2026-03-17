@@ -19,36 +19,36 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Publix BOGO Tracker — Never Miss a Deal Again",
+  title: "Publix BOGO — The Smartest Shopping List for Publix",
   description:
-    "Track every Publix Buy One Get One deal automatically. Build your shopping list, get matched to BOGO deals, and shop smarter with Shop Mode. Free, no account required.",
+    "The smartest shopping list for Publix shoppers. Add your items, see which ones are on BOGO or sale, and shop with a built-in checklist. Free, no account required.",
   openGraph: {
-    title: "Stop leaving free groceries on the shelf",
+    title: "The smartest shopping list for Publix shoppers",
     description:
-      "Publix runs 100+ BOGO deals every week. This app matches them to your shopping list automatically — so you never miss a deal you actually want.",
+      "Add your grocery items, get matched to 100+ weekly deals automatically, and shop with a built-in checklist. Save money every single week.",
     type: "website",
-    siteName: "Publix BOGO Tracker",
+    siteName: "Publix BOGO",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Stop leaving free groceries on the shelf",
+    title: "The smartest shopping list for Publix shoppers",
     description:
-      "Track every Publix BOGO deal. Match your shopping list. Save money every single week.",
+      "Your shopping list + automatic deal matching. Save money on every Publix trip.",
   },
   keywords: [
     "Publix BOGO",
+    "Publix shopping list",
     "Publix deals",
     "Buy One Get One",
     "grocery deals",
-    "Publix shopping list",
     "grocery savings",
     "Publix app",
-    "BOGO tracker",
+    "smart shopping list",
   ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "BOGO Tracker",
+    title: "Publix BOGO",
   },
 };
 

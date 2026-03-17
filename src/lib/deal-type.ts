@@ -1,4 +1,4 @@
-import type { DealType } from "@/types";
+import type { Deal, DealType } from "@/types";
 
 export const DEAL_TYPE_CONFIG: Record<
   DealType,
@@ -31,4 +31,13 @@ export function cleanDealSuffix(name: string): string {
   return name
     .replace(/\s*(?:BOGO|SALE|COUPON)\*?\s*$/i, "")
     .trim();
+}
+
+/**
+ * Check if a shopping list item name matches a deal (by suffix matching on cleaned names).
+ */
+export function itemMatchesDeal(name: string, deal: Deal): boolean {
+  const keyword = cleanDealSuffix(name).toLowerCase();
+  const cleanName = cleanDealSuffix(deal.name).toLowerCase();
+  return cleanName === keyword || cleanName.endsWith(` ${keyword}`);
 }

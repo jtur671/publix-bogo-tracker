@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { cleanDealSuffix } from "@/lib/deal-type";
+import { itemMatchesDeal } from "@/lib/deal-type";
 import type { ShoppingTrip, ShoppingTripItem, Deal, WatchlistItem } from "@/types";
 
 const ACTIVE_TRIP_KEY = "bogo-active-trip";
@@ -38,19 +38,15 @@ function saveHistory(trips: ShoppingTrip[]) {
   localStorage.setItem(TRIP_HISTORY_KEY, JSON.stringify(trips));
 }
 
-function itemMatchesDeal(name: string, deal: Deal): boolean {
-  const keyword = cleanDealSuffix(name).toLowerCase();
-  const cleanName = cleanDealSuffix(deal.name).toLowerCase();
-  return cleanName === keyword || cleanName.endsWith(` ${keyword}`);
-}
-
 export function useShoppingTrip(deals: Deal[] = []) {
   const [trip, setTrip] = useState<ShoppingTrip | null>(null);
+  const [history, setHistory] = useState<ShoppingTrip[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  // Load active trip from localStorage on mount
+  // Load active trip + history from localStorage on mount
   useEffect(() => {
     setTrip(getStoredTrip());
+    setHistory(getHistory());
     setLoaded(true);
   }, []);
 
@@ -142,18 +138,43 @@ export function useShoppingTrip(deals: Deal[] = []) {
       ...trip,
       completed_at: new Date().toISOString(),
     };
-    const history = getHistory();
-    saveHistory([completed, ...history]);
+    const updated = [completed, ...getHistory()].slice(0, 50);
+    saveHistory(updated);
+    setHistory(updated);
     setTrip(null);
   }, [trip]);
 
+  const saveTripFromItems = useCallback((items: ShoppingTripItem[]) => {
+    const checkedItems = items.filter((i) => i.checked);
+    if (checkedItems.length === 0) return;
+
+    const now = new Date().toISOString();
+    const newTrip: ShoppingTrip = {
+      id: crypto.randomUUID(),
+      started_at: now,
+      completed_at: now,
+      items: checkedItems,
+    };
+    const updated = [newTrip, ...getHistory()].slice(0, 50);
+    saveHistory(updated);
+    setHistory(updated);
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    saveHistory([]);
+    setHistory([]);
+  }, []);
+
   return {
     trip,
+    history,
     loaded,
     startTrip,
     addItem,
     toggleItem,
     removeItem,
     endTrip,
+    saveTripFromItems,
+    clearHistory,
   };
 }

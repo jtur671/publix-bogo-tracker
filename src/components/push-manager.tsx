@@ -93,8 +93,8 @@ export function PushManager() {
             </p>
             <p className="text-xs text-muted">
               {subscribed
-                ? "You'll be notified when watchlist items go on sale"
-                : "Get alerts when your watchlist items are BOGO"}
+                ? "You'll be notified when list items go on sale"
+                : "Get alerts when your list items are on deal"}
             </p>
           </div>
         </div>

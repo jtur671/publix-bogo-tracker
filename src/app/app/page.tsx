@@ -1,31 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useDealsContext } from "@/context/deals-context";
 import { useStoreConfig } from "@/hooks/use-store-config";
 import { useWatchlist } from "@/hooks/use-watchlist";
-import { DashboardHeader } from "@/components/dashboard-header";
-import { SectionHeader } from "@/components/section-header";
-import { ShoppingList } from "@/components/shopping-list";
-import { DealCard } from "@/components/deal-card";
-import { DealDetailSheet } from "@/components/deal-detail-sheet";
-import { EmptyWatchlistPrompt } from "@/components/empty-watchlist-prompt";
+import { useShoppingTrip } from "@/hooks/use-shopping-trips";
+import { ShopMode } from "@/components/shop-mode";
 import { BottomNav } from "@/components/bottom-nav";
 import { ZipCodeModal } from "@/components/zip-code-modal";
-import { InstallPrompt } from "@/components/install-prompt";
-import { getRecommendations, getTopAffinityCategories } from "@/lib/recommendations";
-import { useAuth } from "@/context/auth-context";
-import { ShoppingBag, Sparkles, Tag } from "lucide-react";
-import Link from "next/link";
-import { AdSlot } from "@/components/ad-slot";
-import { cleanDealSuffix } from "@/lib/deal-type";
-import type { Deal, DealType } from "@/types";
-import { useState } from "react";
+import { itemMatchesDeal } from "@/lib/deal-type";
+import type { ShoppingTripItem } from "@/types";
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const router = useRouter();
   const { zipCode, needsSetup, updateZip } = useStoreConfig();
-  const { deals, loading, error } = useDealsContext();
+  const { deals } = useDealsContext();
   const {
     items: watchlist,
     checkedItems,
@@ -33,243 +23,84 @@ export default function HomePage() {
     removeKeyword,
     toggleChecked,
     clearChecked,
-    isWatched,
   } = useWatchlist();
+  const { saveTripFromItems } = useShoppingTrip(deals);
 
-  const [showZipModal, setShowZipModal] = useState(false);
-  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
-  // Count how many watchlist items currently match a deal
-  // Uses nameEndsWith (same logic as ShoppingList) so header badge matches list count
-  const watchlistMatchCount = useMemo(() => {
-    if (watchlist.length === 0 || deals.length === 0) return 0;
-    return watchlist.filter((item) => {
-      const kw = cleanDealSuffix(item.keyword).toLowerCase();
-      if (!kw) return false;
-      return deals.some((d) => {
-        const clean = cleanDealSuffix(d.name).toLowerCase();
-        return clean === kw || clean.endsWith(` ${kw}`);
-      });
-    }).length;
-  }, [watchlist, deals]);
+  // Viewport detection
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
-  // Watchlist deals for the bottom nav badge
-  const watchlistDeals = useMemo(() => {
-    if (watchlist.length === 0) return [];
-    return deals.filter((d) => isWatched(d));
-  }, [deals, watchlist, isWatched]);
-
-  // Section 2: Recommendations based on watchlist
-  const recommendations = useMemo(() => {
-    return getRecommendations(watchlist, deals, 12);
-  }, [watchlist, deals]);
-
-  const topCategories = useMemo(() => {
-    return getTopAffinityCategories(watchlist, deals, 3);
-  }, [watchlist, deals]);
-
-  const dealCounts = useMemo(() => {
-    const counts: Record<DealType, number> = { bogo: 0, sale: 0, coupon: 0 };
-    for (const d of deals) counts[d.dealType]++;
-    return counts;
-  }, [deals]);
-
-  const validFrom = deals[0]?.validFrom;
-  const validTo = deals[0]?.validTo;
-
-  const handleToggleWatch = (deal: Deal) => {
-    const existing = watchlist.find((item) => {
-      const kw = item.keyword.toLowerCase();
-      return (
-        deal.name.toLowerCase().includes(kw) ||
-        deal.description.toLowerCase().includes(kw)
-      );
-    });
-
-    if (existing) {
-      removeKeyword(existing.id);
-    } else {
-      const words = deal.name.split(/[,\-\u2013]/)[0].trim();
-      addKeyword(words);
+  // Desktop → redirect to /deals
+  useEffect(() => {
+    if (isMobile === false) {
+      router.replace("/deals");
     }
+  }, [isMobile, router]);
+
+  // Convert watchlist → ShoppingTripItem[] for ShopMode
+  const tripItems: ShoppingTripItem[] = useMemo(() => {
+    return watchlist.map((wi) => ({
+      id: wi.id,
+      name: wi.keyword,
+      checked: checkedItems.has(wi.id),
+      checked_at: null,
+      has_bogo: deals.some((d) => itemMatchesDeal(wi.keyword, d)),
+      added_at: wi.added_at,
+    }));
+  }, [watchlist, checkedItems, deals]);
+
+  // Handle "Done" in ShopMode — save trip and clear checks
+  const handleDone = () => {
+    saveTripFromItems(tripItems);
+    clearChecked();
   };
 
+  // Still determining viewport or desktop (will redirect)
+  if (isMobile === null || isMobile === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-8 h-8 border-3 border-gray-200 border-t-publix-green rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Count deals matching list items for badge
+  const listDealCount = useMemo(() => {
+    if (watchlist.length === 0 || deals.length === 0) return 0;
+    return watchlist.filter((item) =>
+      deals.some((d) => itemMatchesDeal(item.keyword, d))
+    ).length;
+  }, [watchlist, deals]);
+
+  // ─── MOBILE: ShopMode as primary view ──────────────────────────
   return (
-    <div className="min-h-screen pb-20">
-      <DashboardHeader
+    <div className="pb-16">
+      <ShopMode
+        items={tripItems}
+        deals={deals}
         zipCode={zipCode}
-        dealCount={deals.length}
-        watchlistMatchCount={watchlistMatchCount}
-        watchlistTotal={watchlist.length}
-        validFrom={validFrom}
-        validTo={validTo}
-        onChangeZip={() => setShowZipModal(true)}
-        userName={user?.email?.split("@")[0]}
-        dealCounts={dealCounts}
+        onToggleItem={toggleChecked}
+        onAddItem={addKeyword}
+        onRemoveItem={(id: string) => {
+          removeKeyword(id);
+        }}
+        onDone={handleDone}
       />
-
-      <main className="max-w-4xl mx-auto px-3 py-4 space-y-6">
-        <InstallPrompt />
-
-        {error && (
-          <div className="bg-red-50 text-danger text-sm p-3 rounded-xl">
-            {error}
-          </div>
-        )}
-
-        {/* Section 1: Shopping List */}
-        <section aria-label="Shopping list">
-          <SectionHeader
-            title="Shopping List"
-            subtitle={
-              watchlist.length > 0
-                ? `${watchlistMatchCount} of ${watchlist.length} items on sale`
-                : "Add items you buy regularly"
-            }
-            icon={<ShoppingBag size={16} className="text-publix-green" />}
-            action={
-              watchlist.length > 0
-                ? { label: "Watchlist", href: "/watchlist" }
-                : undefined
-            }
-          />
-
-          <div className="mt-3">
-            {watchlist.length === 0 && !loading ? (
-              <div className="space-y-3">
-                {/* Still show the add input even when empty */}
-                <ShoppingList
-                  items={[]}
-                  deals={deals}
-                  checkedItems={checkedItems}
-                  loading={false}
-                  onAddItem={addKeyword}
-                  onRemoveItem={removeKeyword}
-                  onToggleChecked={toggleChecked}
-                  onClearChecked={clearChecked}
-                  zipCode={zipCode}
-                  isWatched={isWatched}
-                />
-                <EmptyWatchlistPrompt />
-              </div>
-            ) : (
-              <ShoppingList
-                items={watchlist}
-                deals={deals}
-                checkedItems={checkedItems}
-                loading={loading}
-                onAddItem={addKeyword}
-                onRemoveItem={removeKeyword}
-                onToggleChecked={toggleChecked}
-                onClearChecked={clearChecked}
-                zipCode={zipCode}
-                isWatched={isWatched}
-              />
-            )}
-          </div>
-        </section>
-
-        {/* Ad placement between sections */}
-        <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
-
-        {/* Section 2: You Might Also Like */}
-        {watchlist.length > 0 && !loading && (
-          <section aria-label="Recommended deals">
-            <SectionHeader
-              title="You Might Also Like"
-              subtitle={
-                topCategories.length > 0
-                  ? `Based on your interest in ${topCategories.join(", ")}`
-                  : "Deals we think you will enjoy"
-              }
-              icon={<Sparkles size={16} className="text-publix-green" />}
-              action={{ label: "All deals", href: "/deals" }}
-            />
-
-            <div className="mt-3">
-              {recommendations.length > 0 ? (
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-3 px-3">
-                  {recommendations.map((deal) => (
-                    <div key={deal.id} className="flex-shrink-0 w-[160px] sm:w-[180px]">
-                      <DealCard
-                        deal={deal}
-                        isWatched={false}
-                        onToggleWatch={() => handleToggleWatch(deal)}
-                        onTap={() => setSelectedDeal(deal)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-border p-6 text-center">
-                  <p className="text-sm text-muted">
-                    Add more items to your list to get personalized
-                    recommendations.
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Browse All CTA for new users without a list */}
-        {watchlist.length === 0 && !loading && deals.length > 0 && (
-          <section aria-label="Browse deals">
-            <SectionHeader
-              title="This Week's Deals"
-              subtitle={`${deals.length} deals available`}
-              icon={<Tag size={16} className="text-publix-green" />}
-              action={{ label: "See all", href: "/deals" }}
-            />
-
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {deals.slice(0, 8).map((deal) => (
-                <DealCard
-                  key={deal.id}
-                  deal={deal}
-                  isWatched={isWatched(deal)}
-                  onToggleWatch={() => handleToggleWatch(deal)}
-                  onTap={() => setSelectedDeal(deal)}
-                />
-              ))}
-            </div>
-
-            <div className="mt-4 text-center">
-              <Link
-                href="/deals"
-                className="inline-flex items-center gap-2 bg-publix-green text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-publix-green-dark transition-colors"
-              >
-                <Tag size={16} />
-                Browse all {deals.length} deals
-              </Link>
-            </div>
-          </section>
-        )}
-      </main>
-
-      <BottomNav
-        watchlistMatchCount={watchlistDeals.length}
-        hasNewDeals={validFrom ? (Date.now() - new Date(validFrom).getTime()) < 86400000 : false}
-      />
-
+      <BottomNav listMatchCount={listDealCount} />
       <ZipCodeModal
-        open={needsSetup || showZipModal}
+        open={needsSetup}
         currentZip={zipCode}
         isFirstRun={needsSetup}
         onSave={(zip) => {
           updateZip(zip);
-          setShowZipModal(false);
         }}
-        onClose={() => setShowZipModal(false)}
-      />
-
-      <DealDetailSheet
-        deal={selectedDeal}
-        isWatched={selectedDeal ? isWatched(selectedDeal) : false}
-        onToggleWatch={() => {
-          if (selectedDeal) handleToggleWatch(selectedDeal);
-        }}
-        onClose={() => setSelectedDeal(null)}
+        onClose={() => {}}
       />
     </div>
   );

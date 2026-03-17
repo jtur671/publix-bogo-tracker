@@ -8,20 +8,23 @@ import { useDealsContext } from "@/context/deals-context";
 import { BottomNav } from "@/components/bottom-nav";
 import { ZipCodeModal } from "@/components/zip-code-modal";
 import { InstallPrompt } from "@/components/install-prompt";
-import { MapPin, Trash2, Info, LogOut, User, Calendar } from "lucide-react";
+import { useShoppingTrip } from "@/hooks/use-shopping-trips";
+import { MapPin, Trash2, Info, LogOut, User, Calendar, Clock } from "lucide-react";
 
 export default function SettingsPage() {
   const { zipCode, updateZip } = useStoreConfig();
   const { user, signOut } = useAuth();
   const { deals } = useDealsContext();
   const { items: watchlist, isWatched } = useWatchlist();
+  const { history, clearHistory } = useShoppingTrip(deals);
   const [showZipModal, setShowZipModal] = useState(false);
   const [cleared, setCleared] = useState(false);
+  const [historyCleared, setHistoryCleared] = useState(false);
 
   const watchlistMatchCount = deals.filter((d) => isWatched(d)).length;
 
   const handleClearData = () => {
-    if (confirm("Clear all local data? This will remove your zip code and watchlist.")) {
+    if (confirm("Clear all local data? This will remove your shopping list, zip code, and preferences.")) {
       localStorage.clear();
       setCleared(true);
       setTimeout(() => window.location.reload(), 500);
@@ -63,10 +66,36 @@ export default function SettingsPage() {
             <div className="flex-1">
               <p className="text-sm font-medium">Clear All Data</p>
               <p className="text-xs text-muted">
-                Remove watchlist, zip code, and preferences
+                Remove shopping list, zip code, and preferences
               </p>
             </div>
             {cleared && (
+              <span className="text-xs text-publix-green font-medium">
+                Cleared!
+              </span>
+            )}
+          </button>
+
+          <div className="border-t border-border mx-4" />
+
+          <button
+            onClick={() => {
+              if (confirm("Clear all trip history?")) {
+                clearHistory();
+                setHistoryCleared(true);
+                setTimeout(() => setHistoryCleared(false), 2000);
+              }
+            }}
+            className="w-full p-4 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors"
+          >
+            <Clock size={20} className="text-muted" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Clear Trip History</p>
+              <p className="text-xs text-muted">
+                {history.length} trip{history.length !== 1 ? "s" : ""} recorded
+              </p>
+            </div>
+            {historyCleared && (
               <span className="text-xs text-publix-green font-medium">
                 Cleared!
               </span>
@@ -92,7 +121,7 @@ export default function SettingsPage() {
               </span>
               <span>·</span>
               <span>
-                {watchlist.length} keyword{watchlist.length !== 1 ? "s" : ""}
+                {watchlist.length} item{watchlist.length !== 1 ? "s" : ""}
               </span>
               <span>·</span>
               <span>{zipCode} zip</span>
@@ -119,7 +148,7 @@ export default function SettingsPage() {
         )}
       </div>
 
-      <BottomNav watchlistMatchCount={watchlistMatchCount} />
+      <BottomNav listMatchCount={watchlistMatchCount} />
 
       <ZipCodeModal
         open={showZipModal}

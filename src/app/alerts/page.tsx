@@ -25,7 +25,7 @@ export default function AlertsPage() {
       if (permission === "granted") {
         const reg = await navigator.serviceWorker.ready;
         await reg.showNotification("BOGO Alert Test", {
-          body: `${watchlistMatchCount} watchlist items are on BOGO this week!`,
+          body: `${watchlistMatchCount} shopping list items are on BOGO this week!`,
           icon: "/icon-192x192.png",
           badge: "/icon-192x192.png",
           tag: "test",
@@ -42,7 +42,7 @@ export default function AlertsPage() {
         <div className="max-w-lg mx-auto">
           <h1 className="text-lg font-bold">Alerts</h1>
           <p className="text-green-100 text-xs">
-            Manage notifications for watchlist deals
+            Manage notifications for shopping list deals
           </p>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function AlertsPage() {
             <div className="flex items-center gap-2 mb-3">
               <Tag size={16} className="text-publix-green" />
               <p className="text-sm font-semibold text-publix-green">
-                {watchlistMatchCount} watchlist item
+                {watchlistMatchCount} list item
                 {watchlistMatchCount !== 1 ? "s" : ""} on BOGO!
               </p>
             </div>
@@ -103,7 +103,7 @@ export default function AlertsPage() {
                     <p className="text-xs font-medium truncate">{deal.name}</p>
                     <p className="text-[10px] text-muted">
                       Matches &quot;{getMatchingKeyword(deal)}&quot; ·{" "}
-                      {deal.daysLeft}d left
+                      {deal.daysLeft < 0 ? "Expired" : `${deal.daysLeft}d left`}
                     </p>
                   </div>
                 </div>
@@ -120,7 +120,7 @@ export default function AlertsPage() {
         {watchlistMatchCount === 0 && watchlist.length > 0 && (
           <div className="text-center py-8 text-muted">
             <Bell size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No watchlist items on sale this week</p>
+            <p className="text-sm">No list items on sale this week</p>
             <p className="text-xs mt-1">
               We&apos;ll alert you when matches appear
             </p>
@@ -130,15 +130,15 @@ export default function AlertsPage() {
         {watchlist.length === 0 && (
           <div className="text-center py-8 text-muted">
             <Bell size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Add items to your watchlist first</p>
+            <p className="text-sm">Add items to your shopping list first</p>
             <p className="text-xs mt-1">
-              Tap the heart on deals or add keywords on the Watchlist tab
+              Tap the heart on deals or add items on the List tab
             </p>
           </div>
         )}
       </div>
 
-      <BottomNav watchlistMatchCount={watchlistMatchCount} />
+      <BottomNav listMatchCount={watchlistMatchCount} />
     </div>
   );
 }

@@ -127,7 +127,7 @@ export default function DealsPage() {
         <AdSlot slot="XXXXXXXXXX" format="horizontal" dismissible />
       </div>
 
-      <BottomNav watchlistMatchCount={watchlistMatchCount} />
+      <BottomNav listMatchCount={watchlistMatchCount} />
 
       <DealDetailSheet
         deal={selectedDeal}

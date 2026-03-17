@@ -26,7 +26,7 @@ export function WatchlistButton({
           ? "bg-red-50 hover:bg-red-100"
           : "bg-gray-100 hover:bg-gray-200"
       )}
-      aria-label={isWatched ? "Remove from watchlist" : "Add to watchlist"}
+      aria-label={isWatched ? "Remove from list" : "Add to list"}
     >
       <Heart
         size={iconSize}

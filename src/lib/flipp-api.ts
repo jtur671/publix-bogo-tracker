@@ -8,7 +8,7 @@ function daysUntil(dateStr: string): number {
   const target = new Date(dateStr);
   const now = new Date();
   const diff = target.getTime() - now.getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
 function transformToDeal(item: FlippItem, dealType: DealType): Deal {
@@ -25,7 +25,7 @@ function transformToDeal(item: FlippItem, dealType: DealType): Deal {
     validTo: item.valid_to,
     category: classifyDeal(item.name, item.description || ""),
     daysLeft,
-    isExpiringSoon: daysLeft <= 2,
+    isExpiringSoon: daysLeft >= 0 && daysLeft <= 2,
     merchantName: item.merchant_name,
     dealType,
   };

@@ -5,8 +5,8 @@ import { MapPin } from "lucide-react";
 interface DashboardHeaderProps {
   zipCode: string;
   dealCount: number;
-  watchlistMatchCount: number;
-  watchlistTotal: number;
+  listMatchCount: number;
+  listTotal: number;
   validFrom?: string;
   validTo?: string;
   onChangeZip: () => void;
@@ -24,8 +24,8 @@ function formatDate(dateStr: string): string {
 export function DashboardHeader({
   zipCode,
   dealCount,
-  watchlistMatchCount,
-  watchlistTotal,
+  listMatchCount,
+  listTotal,
   validFrom,
   validTo,
   onChangeZip,
@@ -73,13 +73,13 @@ export function DashboardHeader({
           </button>
         </div>
 
-        {watchlistTotal > 0 && (
+        {listTotal > 0 && (
           <div className="mt-3 bg-white/10 backdrop-blur-sm rounded-xl px-3.5 py-2.5 flex items-center gap-2.5">
             <span className="bg-white text-publix-green text-xs font-extrabold rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1.5 flex-shrink-0 shadow-warm">
-              {watchlistMatchCount}
+              {listMatchCount}
             </span>
             <span className="text-sm text-white/80 font-medium">
-              of your {watchlistTotal} {watchlistTotal === 1 ? "item" : "items"} on sale this week
+              of your {listTotal} {listTotal === 1 ? "item" : "items"} on sale this week
             </span>
           </div>
         )}
