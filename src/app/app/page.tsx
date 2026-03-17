@@ -55,6 +55,14 @@ export default function HomePage() {
     }));
   }, [watchlist, checkedItems, deals]);
 
+  // Count deals matching list items for badge
+  const listDealCount = useMemo(() => {
+    if (watchlist.length === 0 || deals.length === 0) return 0;
+    return watchlist.filter((item) =>
+      deals.some((d) => itemMatchesDeal(item.keyword, d))
+    ).length;
+  }, [watchlist, deals]);
+
   // Handle "Done" in ShopMode — save trip and clear checks
   const handleDone = () => {
     saveTripFromItems(tripItems);
@@ -69,14 +77,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  // Count deals matching list items for badge
-  const listDealCount = useMemo(() => {
-    if (watchlist.length === 0 || deals.length === 0) return 0;
-    return watchlist.filter((item) =>
-      deals.some((d) => itemMatchesDeal(item.keyword, d))
-    ).length;
-  }, [watchlist, deals]);
 
   // ─── MOBILE: ShopMode as primary view ──────────────────────────
   return (
