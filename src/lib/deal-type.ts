@@ -34,10 +34,42 @@ export function cleanDealSuffix(name: string): string {
 }
 
 /**
- * Check if a shopping list item name matches a deal (by suffix matching on cleaned names).
+ * Keyword alias groups — every keyword in a group surfaces the same deals.
+ * Values are normalized (lowercase, no apostrophes/®/™).
  */
+const KEYWORD_ALIASES: string[][] = [
+  ["boars head", "ham", "turkey", "deli meat", "deli cheese", "deli ham"],
+];
+
+/** Normalize for matching: strip suffixes, lowercase, remove ®™©' */
+function normalizeForMatch(s: string): string {
+  return cleanDealSuffix(s).toLowerCase().replace(/[®™©']/g, "");
+}
+
+/** Expand a keyword into all keywords to try (itself + aliases). */
+export function expandKeywords(name: string): string[] {
+  const kw = normalizeForMatch(name);
+  if (!kw) return [];
+  const result = [kw];
+  for (const group of KEYWORD_ALIASES) {
+    if (group.includes(kw)) {
+      for (const alias of group) {
+        if (alias !== kw) result.push(alias);
+      }
+      break;
+    }
+  }
+  return result;
+}
+
+/** Check if a deal name matches any of the given normalized keywords. */
+export function dealNameMatchesAny(dealName: string, keywords: string[]): boolean {
+  const clean = normalizeForMatch(dealName);
+  return keywords.some(kw =>
+    clean === kw || clean.endsWith(` ${kw}`) || clean.startsWith(`${kw} `)
+  );
+}
+
 export function itemMatchesDeal(name: string, deal: Deal): boolean {
-  const keyword = cleanDealSuffix(name).toLowerCase();
-  const cleanName = cleanDealSuffix(deal.name).toLowerCase();
-  return cleanName === keyword || cleanName.endsWith(` ${keyword}`);
+  return dealNameMatchesAny(deal.name, expandKeywords(name));
 }

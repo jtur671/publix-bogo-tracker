@@ -5,7 +5,7 @@ import { Plus, RotateCcw, Search } from "lucide-react";
 import Image from "next/image";
 import { ShoppingListItem } from "@/components/shopping-list-item";
 import { cn } from "@/lib/utils";
-import { cleanDealSuffix, DEAL_TYPE_CONFIG } from "@/lib/deal-type";
+import { cleanDealSuffix, DEAL_TYPE_CONFIG, expandKeywords, dealNameMatchesAny } from "@/lib/deal-type";
 import type { Deal, DealType, WatchlistItem } from "@/types";
 
 interface ShoppingListProps {
@@ -37,35 +37,24 @@ interface SearchResult {
  * finds other string cheese deals (not all cheese), while "Sara Lee Butter
  * Bread" still finds other bread deals.
  */
-function cleanKeyword(str: string): string {
-  return cleanDealSuffix(str).toLowerCase();
-}
-
-function nameEndsWith(dealName: string, keyword: string): boolean {
-  const clean = cleanKeyword(dealName);
-  const kw = cleanKeyword(keyword);
-  return clean === kw || clean.endsWith(` ${kw}`);
-}
-
 function findMatchingDeals(item: WatchlistItem, deals: Deal[]): Deal[] {
-  const kw = cleanKeyword(item.keyword);
-  if (!kw) return [];
+  const keywords = expandKeywords(item.keyword);
+  if (keywords.length === 0) return [];
 
-  // 1. Direct matches — deal name ends with keyword
-  const directMatches = deals.filter((d) => nameEndsWith(d.name, kw));
+  // 1. Direct matches (including aliases)
+  const directMatches = deals.filter((d) => dealNameMatchesAny(d.name, keywords));
 
   // 2. Find related deals — only for 3+ word keywords (likely brand + product)
-  const kwWords = kw.split(/\s+/);
+  const kwWords = keywords[0].split(/\s+/);
   if (directMatches.length > 0 && kwWords.length >= 3) {
     const directIds = new Set(directMatches.map((d) => d.id));
     const otherDeals = deals.filter((d) => !directIds.has(d.id));
 
-    // Try progressively shorter phrases by dropping words from the front
     for (let i = 1; i < kwWords.length; i++) {
       const phrase = kwWords.slice(i).join(" ");
       if (phrase.length < 4) continue;
 
-      const siblings = otherDeals.filter((d) => nameEndsWith(d.name, phrase));
+      const siblings = otherDeals.filter((d) => dealNameMatchesAny(d.name, [phrase]));
 
       if (siblings.length > 0) {
         return [...directMatches, ...siblings];

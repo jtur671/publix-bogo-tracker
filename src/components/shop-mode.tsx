@@ -5,7 +5,7 @@ import { Plus, Search, ChevronDown, ChevronUp, ChevronRight, Tag } from "lucide-
 import { AdSlot } from "@/components/ad-slot";
 import type { Deal, DealType, ShoppingTripItem } from "@/types";
 import { cn } from "@/lib/utils";
-import { cleanDealSuffix, DEAL_TYPE_CONFIG } from "@/lib/deal-type";
+import { cleanDealSuffix, DEAL_TYPE_CONFIG, expandKeywords, dealNameMatchesAny } from "@/lib/deal-type";
 
 interface ShopModeProps {
   items: ShoppingTripItem[];
@@ -165,19 +165,14 @@ export function ShopMode({
 
   const getMatchingDeals = useCallback(
     (itemName: string): Deal[] => {
-      const keyword = cleanDealSuffix(itemName).toLowerCase();
-      if (!keyword) return [];
+      const keywords = expandKeywords(itemName);
+      if (keywords.length === 0) return [];
 
-      const endsWith = (dealName: string, kw: string) => {
-        const clean = cleanDealSuffix(dealName).toLowerCase();
-        return clean === kw || clean.endsWith(` ${kw}`);
-      };
-
-      // Direct matches
-      const direct = deals.filter((d) => endsWith(d.name, keyword));
+      // Direct matches (including aliases)
+      const direct = deals.filter((d) => dealNameMatchesAny(d.name, keywords));
 
       // For multi-word keywords, find sibling deals by product type
-      const words = keyword.split(/\s+/);
+      const words = keywords[0].split(/\s+/);
       if (words.length >= 2) {
         const directIds = new Set(direct.map((d) => d.id));
         const others = deals.filter((d) => !directIds.has(d.id));
@@ -185,7 +180,7 @@ export function ShopMode({
         for (let i = 1; i < words.length; i++) {
           const phrase = words.slice(i).join(" ");
           if (phrase.length < 3) continue;
-          const siblings = others.filter((d) => endsWith(d.name, phrase));
+          const siblings = others.filter((d) => dealNameMatchesAny(d.name, [phrase]));
           if (siblings.length > 0) {
             return [...direct, ...siblings];
           }
@@ -238,9 +233,8 @@ export function ShopMode({
             <button
               onClick={onDone}
               className="bg-publix-green text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-publix-green-dark active:scale-95 transition-all"
-              data-testid="done-button"
             >
-              Done
+              Save
             </button>
           </div>
         </div>
@@ -499,6 +493,12 @@ export function ShopMode({
                                 DEAL_TYPE_CONFIG[deal.dealType].textColor
                               )}>
                                 {DEAL_TYPE_CONFIG[deal.dealType].label}
+                              </span>
+                              <span className={cn(
+                                "text-[10px] mt-0.5 inline-block ml-1.5",
+                                deal.daysLeft <= 2 ? "text-red-500 font-semibold" : "text-gray-400"
+                              )}>
+                                · {deal.daysLeft <= 0 ? "Expires today" : `${deal.daysLeft}d left`}
                               </span>
                             </div>
                           </div>
